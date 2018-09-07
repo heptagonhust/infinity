@@ -17,6 +17,8 @@
 #include <infinity/utils/Debug.h>
 #include <infinity/utils/Address.h>
 
+const char * infinity::core::Configuration::DEFAULT_IB_DEVICE = "ib0";
+
 namespace infinity {
 namespace queues {
 
