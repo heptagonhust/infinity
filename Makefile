@@ -60,7 +60,7 @@ BUILD_DIRECTORIES	= $(patsubst $(SOURCE_FOLDER)/%,$(BUILD_FOLDER)/%,$(SOURCE_DIR
 
 ##################################################
 
-all: library examples
+all: library examples java
 
 ##################################################
 
@@ -92,3 +92,15 @@ examples:
 	$(CC) src/examples/send-performance.cpp $(CC_FLAGS) $(LD_FLAGS) -I $(RELEASE_FOLDER)/$(INCLUDE_FOLDER) -L $(RELEASE_FOLDER) -o $(RELEASE_FOLDER)/$(EXAMPLES_FOLDER)/send-performance
 
 ##################################################
+
+java:
+	CPATH=$$CPATH:$$JAVA_HOME/include:src/ \
+	gcc -o $(RELEASE_FOLDER)/rdmaclientlib.so -fPIC -shared -I$$JAVA_HOME/include \
+	-Isrc/ -I$$JAVA_HOME/include/linux \
+	src/infinity/java-wrapper/java_wrapper_client.cpp -std=c++0x
+	
+	CPATH=$$CPATH:$$JAVA_HOME/include:src/ \
+	gcc -o $(RELEASE_FOLDER)/rdmaserverlib.so -fPIC -shared -I$$JAVA_HOME/include \
+	-Isrc/ -I$$JAVA_HOME/include/linux \
+	src/infinity/java-wrapper/java_wrapper_server.cpp -std=c++0x
+
