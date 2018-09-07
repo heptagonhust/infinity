@@ -9,7 +9,7 @@
 #ifndef REQUESTS_REQUESTTOKEN_H_
 #define REQUESTS_REQUESTTOKEN_H_
 
-#include <atomic>
+#include <cstdatomic>
 #include <stdint.h>
 
 #include <infinity/core/Context.h>

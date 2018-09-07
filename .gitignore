@@ -1,2 +1,11 @@
 build/
+target/
 release/
+bin/
+.vscode
+.settings
+.idea
+*.jar
+*.class
+*.gi
+
