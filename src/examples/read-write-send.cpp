@@ -20,26 +20,18 @@
 #include <infinity/requests/RequestToken.h>
 
 #define PORT_NUMBER 8011
-#define SERVER_IP "127.0.0.1"
 
-// Usage: ./progam -s for server and ./program for client component
 int main(int argc, char **argv) {
 
-	bool isServer = false;
+	bool isServer = argc == 1;
+	char *serverIp = NULL;
 
-	while (argc > 1) {
-		if (argv[1][0] == '-') {
-			switch (argv[1][1]) {
-
-				case 's': {
-					isServer = true;
-					break;
-				}
-
-			}
-		}
-		++argv;
-		--argc;
+	if(isServer) {
+		printf("./this for server and ./this [ServerIP] for client\n");
+	}
+	else {
+		serverIp = argv[1];
+		printf("client\n");
 	}
 
 	infinity::core::Context *context = new infinity::core::Context();
@@ -75,7 +67,7 @@ int main(int argc, char **argv) {
 	} else {
 
 		printf("Connecting to remote node\n");
-		qp = qpFactory->connectToRemoteHost(SERVER_IP, PORT_NUMBER);
+		qp = qpFactory->connectToRemoteHost(serverIp, PORT_NUMBER);
 		infinity::memory::RegionToken *remoteBufferToken = (infinity::memory::RegionToken *) qp->getUserData();
 
 
