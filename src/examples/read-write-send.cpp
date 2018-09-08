@@ -9,6 +9,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <unistd.h>
+#include <string.h>
 #include <cassert>
 
 #include <infinity/core/Context.h>
@@ -63,7 +64,11 @@ int main(int argc, char **argv) {
 		infinity::core::receive_element_t receiveElement;
 		while(!context->receive(&receiveElement));
 
-		printf("Message received\n");
+		printf("Message received:\n");
+		printf("%.128s", bufferToReceive->getData());
+		printf("Message written:\n");
+		printf("%.128s", bufferToReadWrite->getData());
+
 		delete bufferToReadWrite;
 		delete bufferToReceive;
 
@@ -78,11 +83,14 @@ int main(int argc, char **argv) {
 		infinity::memory::Buffer *buffer1Sided = new infinity::memory::Buffer(context, 128 * sizeof(char));
 		infinity::memory::Buffer *buffer2Sided = new infinity::memory::Buffer(context, 128 * sizeof(char));
 
+		strcpy((char*)buffer2Sided->getData(), "Fucking");
+
 		printf("Reading content from remote buffer\n");
 		infinity::requests::RequestToken requestToken(context);
 		qp->read(buffer1Sided, remoteBufferToken, &requestToken);
 		requestToken.waitUntilCompleted();
 
+		strcpy((char*)buffer1Sided->getData(), "Hello");
 		printf("Writing content to remote buffer\n");
 		qp->write(buffer1Sided, remoteBufferToken, &requestToken);
 		requestToken.waitUntilCompleted();
