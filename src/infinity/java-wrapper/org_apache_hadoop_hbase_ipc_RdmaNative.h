@@ -12,9 +12,7 @@ extern "C" {
  * Method:    rdmaIsOpen
  * Signature: (Ljava/lang/Object;)Z
  */
-JNIEXPORT jboolean JNICALL Java_org_apache_hadoop_hbase_ipc_RdmaNative_rdmaIsOpen(JNIEnv *, jobject, jobject) {
-    
-}
+JNIEXPORT jboolean JNICALL Java_org_apache_hadoop_hbase_ipc_RdmaNative_rdmaIsOpen(JNIEnv *, jobject, jobject);
 
 /*
  * Class:     org_apache_hadoop_hbase_ipc_RdmaNative

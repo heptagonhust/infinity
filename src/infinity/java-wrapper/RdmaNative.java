@@ -13,5 +13,6 @@ public class RdmaNative {
 
     public class RdmaConnection {
         private long ptrQP;
+        private long ptrRbuf;
     }
 }
