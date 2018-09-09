@@ -56,6 +56,19 @@ int main(int argc, char **argv) {
 		infinity::core::receive_element_t receiveElement;
 		while(!context->receive(&receiveElement));
 
+
+		printf("Message received:\n");
+		printf("%.128s", bufferToReceive->getData());
+		printf("Message written:\n");
+		printf("%.128s", bufferToReadWrite->getData());
+
+        printf("Now resize and read again\n");
+        bufferToReadWrite->resize(1024 * sizeof(char));
+
+		printf("Waiting for message (blocking)\n");
+		infinity::core::receive_element_t receiveElement;
+		while(!context->receive(&receiveElement));
+
 		printf("Message received:\n");
 		printf("%.128s", bufferToReceive->getData());
 		printf("Message written:\n");
@@ -91,9 +104,19 @@ int main(int argc, char **argv) {
 		qp->send(buffer2Sided, &requestToken);
 		requestToken.waitUntilCompleted();
 
+        buffer1Sided->resize(1024);
+        memset(buffer1Sided->getData, 'f', 1024);
+        buffer1Sided->getData[1023] = '\0';
+		printf("Writing content to remote buffer\n");
+		qp->write(buffer1Sided, remoteBufferToken, &requestToken);
+		requestToken.waitUntilCompleted();
+
+		printf("Sending message to remote host\n");
+		qp->send(buffer2Sided, &requestToken);
+		requestToken.waitUntilCompleted();
+
 		delete buffer1Sided;
 		delete buffer2Sided;
-
 	}
 
 	delete qp;
