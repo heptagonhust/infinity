@@ -52,16 +52,16 @@ int main(int argc, char **argv) {
 		qpFactory->bindToPort(PORT_NUMBER);
 		qp = qpFactory->acceptIncomingConnection(bufferToken, sizeof(infinity::memory::RegionToken));
 
-		printf("Waiting for message (blocking)\n");
-		infinity::core::receive_element_t receiveElement;
-		while(!context->receive(&receiveElement));
-
-
-		printf("Message received:\n");
-		printf("%.128s", bufferToReceive->getData());
-		printf("Message written:\n");
-		printf("%.128s", bufferToReadWrite->getData());
-
+//		printf("Waiting for message (blocking)\n");
+//		infinity::core::receive_element_t receiveElement;
+//		while(!context->receive(&receiveElement));
+//
+//
+//		printf("Message received:\n");
+//		printf("%.128s", bufferToReceive->getData());
+//		printf("Message written:\n");
+//		printf("%.128s", bufferToReadWrite->getData());
+//
         printf("Now resize and read again\n");
         bufferToReadWrite->resize(1024 * sizeof(char));
 
@@ -95,18 +95,18 @@ int main(int argc, char **argv) {
 		qp->read(buffer1Sided, remoteBufferToken, &requestToken);
 		requestToken.waitUntilCompleted();
 
-		strcpy((char*)buffer1Sided->getData(), "Hello");
-		printf("Writing content to remote buffer\n");
-		qp->write(buffer1Sided, remoteBufferToken, &requestToken);
-		requestToken.waitUntilCompleted();
-
-		printf("Sending message to remote host\n");
-		qp->send(buffer2Sided, &requestToken);
-		requestToken.waitUntilCompleted();
+//		strcpy((char*)buffer1Sided->getData(), "Hello");
+//		printf("Writing content to remote buffer\n");
+//		qp->write(buffer1Sided, remoteBufferToken, &requestToken);
+//		requestToken.waitUntilCompleted();
+//
+//		printf("Sending message to remote host\n");
+//		qp->send(buffer2Sided, &requestToken);
+//		requestToken.waitUntilCompleted();
 
         buffer1Sided->resize(1024);
-        memset(buffer1Sided->getData, 'f', 1024);
-        buffer1Sided->getData[1023] = '\0';
+        memset(buffer1Sided->getData(), 'f', 1024);
+        ((char*)buffer1Sided->getData())[1023] = '\0';
 		printf("Writing content to remote buffer\n");
 		qp->write(buffer1Sided, remoteBufferToken, &requestToken);
 		requestToken.waitUntilCompleted();
