@@ -16,6 +16,7 @@ public class RdmaNative {
     public class RdmaConnection {
         private long ptrQP;
         private long ptrRegionTokenBuf; // registered as fixed length while making conn.
+        private long ptrRemoteSerialBuf; // remote buffer serial number.
         private long ptrDynamicDataBuf; // must register on every local write. Invalidate it only if ptrRegionTokenBuf has changed!
         private boolean isServer; 
         private int errorCode;
@@ -36,7 +37,9 @@ public class RdmaNative {
         // Assume remote holds only one buffer. Read the buffer. Blockd call.
         public native ByteBuffer readRemote();
         // Use JNI GlobalRef to prevent GC, register this buffer, and replace ptrRegionTokenBuf atomicly for peer read. Blocked call.
+        // Finally, use async rdmaWrite to set remote->ptrRemoteSerialBuf->data(), which will trigger isRemoteReadable soon. // maybe a bool is enough
         public native int writeLocal(ByteBuffer data); 
+        // Add a serial number into *ptrRegionTokenBuf to implement it.
         public native boolean isRemoteReadable(); 
         public native int close();
     }
