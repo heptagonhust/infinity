@@ -41,41 +41,26 @@ int main(int argc, char **argv) {
 	if(isServer) {
 
 		printf("Creating buffers to read from and write to\n");
-		infinity::memory::Buffer *bufferToReadWrite = new infinity::memory::Buffer(context, 128 * sizeof(char));
-		infinity::memory::RegionToken *bufferToken = bufferToReadWrite->createRegionToken();
-
-		printf("Creating buffers to receive a message\n");
-		infinity::memory::Buffer *bufferToReceive = new infinity::memory::Buffer(context, 128 * sizeof(char));
-		context->postReceiveBuffer(bufferToReceive);
+		infinity::memory::Buffer *pRegionTokenBuffer = new infinity::memory::Buffer(context, sizeof(infinity::memory::RegionToken));
+		infinity::memory::RegionToken *pRegionTokenBufferToken = pRegionTokenBuffer->createRegionToken();
 
 		printf("Setting up connection (blocking)\n");
 		qpFactory->bindToPort(PORT_NUMBER);
-		qp = qpFactory->acceptIncomingConnection(bufferToken, sizeof(infinity::memory::RegionToken));
+		qp = qpFactory->acceptIncomingConnection(pRegionTokenBufferToken, sizeof(infinity::memory::RegionToken));
 
-//		printf("Waiting for message (blocking)\n");
-//		infinity::core::receive_element_t receiveElement;
-//		while(!context->receive(&receiveElement));
-//
-//
-//		printf("Message received:\n");
-//		printf("%.128s", bufferToReceive->getData());
-//		printf("Message written:\n");
-//		printf("%.128s", bufferToReadWrite->getData());
-//
-        printf("Now resize and read again\n");
-        bufferToReadWrite->resize(1024 * sizeof(char));
+        printf("Accepted. Now create dynamic memory buffer...");
+        infinity::memory::Buffer *pResponseBuffer = new infinity::memory::Buffer(context, 1024);
+        infinity::memory::RegionToken *pResponseToken = pResponseBuffer->createRegionToken();
+        memcpy(pRegionTokenBuffer, pResponseToken, sizeof(infinity::memory::RegionToken));
+        memcpy(pResponseBuffer->getData(), "Fucking", 8);
+        
+        printf("sleep 5 while client is reading and responsing...");
+        sleep(5);
 
-		printf("Waiting for message (blocking)\n");
-		infinity::core::receive_element_t receiveElement;
-		while(!context->receive(&receiveElement));
+        printf("pResponseBuffer is now %s", pResponseBuffer->getData());
 
-		printf("Message received:\n");
-		printf("%.128s", bufferToReceive->getData());
-		printf("Message written:\n");
-		printf("%.128s", bufferToReadWrite->getData());
-
-		delete bufferToReadWrite;
-		delete bufferToReceive;
+        delete pResponseBuffer;
+        delete pRegionTokenBuffer;
 
 	} else {
 
@@ -83,40 +68,25 @@ int main(int argc, char **argv) {
 		qp = qpFactory->connectToRemoteHost(serverIp, PORT_NUMBER);
 		infinity::memory::RegionToken *remoteBufferToken = (infinity::memory::RegionToken *) qp->getUserData();
 
-
 		printf("Creating buffers\n");
-		infinity::memory::Buffer *buffer1Sided = new infinity::memory::Buffer(context, 128 * sizeof(char));
-		infinity::memory::Buffer *buffer2Sided = new infinity::memory::Buffer(context, 128 * sizeof(char));
+		infinity::memory::Buffer *pRegionTokenBuffer = new infinity::memory::Buffer(context, sizeof(infinity::memory::RegionToken));
 
-		strcpy((char*)buffer2Sided->getData(), "Fucking");
-
-		printf("Reading content from remote buffer\n");
+		printf("Sleep 3... Server is creating token.\n");
+        sleep(3);
 		infinity::requests::RequestToken requestToken(context);
-		qp->read(buffer1Sided, remoteBufferToken, &requestToken);
+		qp->read(pRegionTokenBuffer, remoteBufferToken, &requestToken);
 		requestToken.waitUntilCompleted();
 
-//		strcpy((char*)buffer1Sided->getData(), "Hello");
-//		printf("Writing content to remote buffer\n");
-//		qp->write(buffer1Sided, remoteBufferToken, &requestToken);
-//		requestToken.waitUntilCompleted();
-//
-//		printf("Sending message to remote host\n");
-//		qp->send(buffer2Sided, &requestToken);
-//		requestToken.waitUntilCompleted();
+        printf("Token got! Now I'll read the real data.");
+        infinity::memory::RegionToken *pRemoteToken = reinterpret_cast<infinity::memory::RegionToken*>(pRegionTokenBuffer->getData());
+        int serverBufSize = pRemoteToken->getSizeInBytes();
+        infinity::memory::Buffer *pBufferData = new infinity::memory::Buffer(context, serverBufSize);
+        qp->read(pBufferData, pRemoteToken, &requestToken);
+        requestToken.waitUntilCompleted();
 
-        buffer1Sided->resize(1024);
-        memset(buffer1Sided->getData(), 'f', 1024);
-        ((char*)buffer1Sided->getData())[1023] = '\0';
-		printf("Writing content to remote buffer\n");
-		qp->write(buffer1Sided, remoteBufferToken, &requestToken);
-		requestToken.waitUntilCompleted();
-
-		printf("Sending message to remote host\n");
-		qp->send(buffer2Sided, &requestToken);
-		requestToken.waitUntilCompleted();
-
-		delete buffer1Sided;
-		delete buffer2Sided;
+        printf("It seems that I've read the data. it's %s", (char *)pBufferData->getData());
+        delete pBufferData;
+        delete pRegionTokenBuffer;
 	}
 
 	delete qp;

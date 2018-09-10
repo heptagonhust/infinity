@@ -13,6 +13,9 @@ public class RdmaNative {
 
     public class RdmaConnection {
         private long ptrQP;
-        private long ptrRbuf;
+        //private long ptrRbuf;
+        public ByteBuffer registeredBuf1;
+        public ByteBuffer registeredBuf2;
+        public ByteBuffer registeredBuf3;
     }
 }
