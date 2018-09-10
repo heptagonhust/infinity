@@ -280,6 +280,11 @@ void QueuePair::write(infinity::memory::Buffer* buffer, uint64_t localOffset, in
 
 }
 
+void QueuePair::writeWithImmediate(infinity::memory::Buffer* buffer, infinity::memory::RegionToken* destination, uint32_t immediateValue, infinity::requests::RequestToken *requestToken) {
+	writeWithImmediate(buffer, 0, destination, 0, buffer->getSizeInBytes(), immediateValue, OperationFlags(), requestToken);
+	INFINITY_ASSERT(buffer->getSizeInBytes() <= ((uint64_t) UINT32_MAX), "[INFINITY][QUEUES][QUEUEPAIR] Request must be smaller or equal to UINT_32_MAX bytes. This memory region is larger. Please explicitly indicate the size of the data to transfer.\n");
+}
+
 void QueuePair::writeWithImmediate(infinity::memory::Buffer* buffer, uint64_t localOffset, infinity::memory::RegionToken* destination, uint64_t remoteOffset,
 		uint32_t sizeInBytes, uint32_t immediateValue, OperationFlags send_flags, infinity::requests::RequestToken* requestToken) {
 

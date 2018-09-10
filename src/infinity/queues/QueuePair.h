@@ -121,6 +121,7 @@ public:
 	void sendWithImmediate(infinity::memory::Buffer *buffer, uint64_t localOffset, uint32_t sizeInBytes, uint32_t immediateValue,
 			OperationFlags flags, infinity::requests::RequestToken *requestToken = NULL);
 
+    void writeWithImmediate(infinity::memory::Buffer* buffer, infinity::memory::RegionToken* destination, uint32_t immediateValue, infinity::requests::RequestToken *requestToken);
 	void writeWithImmediate(infinity::memory::Buffer *buffer, uint64_t localOffset, infinity::memory::RegionToken *destination, uint64_t remoteOffset,
 			uint32_t sizeInBytes, uint32_t immediateValue, OperationFlags flags, infinity::requests::RequestToken *requestToken = NULL);
 
