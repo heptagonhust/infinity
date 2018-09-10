@@ -51,7 +51,7 @@ int main(int argc, char **argv) {
         printf("Accepted. Now create dynamic memory buffer...");
         infinity::memory::Buffer *pResponseBuffer = new infinity::memory::Buffer(context, 1024);
         infinity::memory::RegionToken *pResponseToken = pResponseBuffer->createRegionToken();
-        memcpy(pRegionTokenBuffer, pResponseToken, sizeof(infinity::memory::RegionToken));
+        memcpy(pRegionTokenBuffer->getData(), pResponseToken, sizeof(infinity::memory::RegionToken));
         memcpy(pResponseBuffer->getData(), "Fucking", 8);
         
         printf("sleep 5 while client is reading and responsing...");
