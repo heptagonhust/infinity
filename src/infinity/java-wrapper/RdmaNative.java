@@ -14,10 +14,13 @@ public class RdmaNative {
     public native RdmaConnection rdmaBlockedAccept(int port);
 
     public class RdmaConnection {
+        /* 4ptr is maintained by C++ class.
         private long ptrQP;
         private long ptrRegionTokenBuf; // registered as fixed length while making conn.
         private long ptrRemoteSerialBuf; // remote buffer serial number.
         private long ptrDynamicDataBuf; // must register on every local write. Invalidate it only if ptrRegionTokenBuf has changed!
+        */
+        private long ptrCxxClass;
         private boolean isServer; 
         private int errorCode;
         private boolean isClosed;
