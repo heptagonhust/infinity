@@ -22,30 +22,45 @@ private:
     private long ptrRemoteSerialBuf; // remote buffer serial number.
     private long ptrDynamicDataBuf; // must register on every local write. Invalidate it only if ptrRegionTokenBuf has changed!
     */
+    typedef std::pair<memory::RegionToken, memory::RegionToken> qpUserDataType;
     queues::QueuePair *pQP; // must delete
 
     memory::Buffer *pLocalRegionTokenBuffer; // must delete
     memory::RegionToken *pLocalRegionTokenBufferToken; // must delete
-    memory::RegionToken *pRemoteRegionTokenBufferToken; // must NOT delete
+    memory::Buffer *pLocalDynamicRegionSizeBuffer; // must delete
+    memory::RegionToken *pLocalDynamicRegionSizeBufferToken; // must delete
 
-    void initRegionTokenBuffer() {
+    memory::RegionToken *pRemoteRegionTokenBufferToken; // must NOT delete
+    memory::RegionToken *pRemoteDynamicRegionSizeBufferToken; // must NOT delete
+
+    void initFixedLocalBuffer() {
 		pLocalRegionTokenBuffer = new infinity::memory::Buffer(context, sizeof(infinity::memory::RegionToken));
 		pLocalRegionTokenBufferToken = pLocalRegionTokenBuffer->createRegionToken();
+        pLocalDynamicRegionSizeBuffer = new infinity::memory::Buffer(context, sizeof(long));
+        pLocalDynamicRegionSizeBufferToken = pLocalDynamicRegionSizeBuffer->createRegionToken();
     }
 public:
     CRdmaConnectionInfo() : pQP(nullptr), pLocalRegionTokenBuffer(nullptr), pLocalRegionTokenBufferToken(nullptr),
-        pRemoteRegionTokenBufferToken(nullptr) {}
+        pRemoteRegionTokenBufferToken(nullptr), pLocalDynamicRegionSizeBuffer(nullptr), pLocalDynamicRegionSizeBufferToken(nullptr)
+        {}
     ~CRdmaConnectionInfo() {
         if(pQP) delete pQP;
         if(pLocalRegionTokenBuffer) delete pLocalRegionTokenBuffer;
         if(pLocalRegionTokenBufferToken) delete pLocalRegionTokenBufferToken;
+        if(pLocalDynamicRegionSizeBuffer) delete pLocalDynamicRegionSizeBuffer;
+        if(pLocalDynamicRegionSizeBufferToken) delete pLocalDynamicRegionSizeBufferToken;
         if(pRemoteRegionTokenBufferToken) /*DO NOT DELETE IT!!!!!!!*/;
+        if(pRemoteDynamicRegionSizeBufferToken) /*DO NOT DELETE IT!!!!!!!*/;
     }
 
     void connectToRemote(const char *serverAddr, int serverPort) {
-        initRegionTokenBuffer();
-        pQP = qpFactory->connectToRemoteHost(serverAddr, serverPort, pLocalRegionTokenBufferToken, sizeof(memory::RegionToken));
-        pRemoteRegionTokenBufferToken = reinterpret_cast<memory::RegionToken *>(pQP->getUserData());
+        initFixedLocalBuffer();
+        qpUserDataType qpUserData(*pLocalRegionTokenBufferToken, *pLocalDynamicRegionSizeBufferToken);
+        pQP = qpFactory->connectToRemoteHost(serverAddr, serverPort, qpUserData, sizeof(qpUserData));
+        qpUserData = *reinterpret_cast<qpUserDataType *>(pQP->getUserData());
+        pRemoteRegionTokenBufferToken = &qpUserData.first;
+        pRemoteDynamicRegionSizeBufferToken = &qpUserData.second;
+
         // Create and register first local buffer.
         // Create another local buffer to indicate local buffer size, sothat remote know how many bytes to read.
     }
