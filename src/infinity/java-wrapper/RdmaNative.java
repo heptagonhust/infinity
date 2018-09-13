@@ -2,8 +2,8 @@ package org.apache.hadoop.hbase.ipc;
 
 
 import org.apache.yetus.audience.InterfaceAudience;
-//org.apache.yetus.audience.InterfaceAudience.aaaaa
 import java.nio.ByteBuffer;
+
 @InterfaceAudience.Public
 public class RdmaNative {
     // This function must be called exactly once to construct necessary structs.
