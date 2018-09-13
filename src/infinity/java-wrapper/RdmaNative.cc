@@ -14,6 +14,13 @@ using namespace infinity;
 core::Context *context;
 queues::QueuePairFactory *qpFactory = new infinity::queues::QueuePairFactory(context);
 
+#ifdef RDEBUG
+#define rdma_debug std::cerr << "RdmaNative Debug: "
+#else
+#define rdma_debug if(false) std::cerr
+#endif
+#define rdma_error std::cerr << "RdmaNative: "
+
 class CRdmaConnectionInfo {
 private:
     /* 4ptr is maintained by C++ class.
@@ -30,18 +37,26 @@ private:
     memory::Buffer *pLocalDynamicRegionSizeBuffer; // must delete
     memory::RegionToken *pLocalDynamicRegionSizeBufferToken; // must delete
 
+    memory::Buffer *pLocalBuffer; // dynamically managed
+    memory::RegionToken *pLocalBufferToken;
+
     memory::RegionToken *pRemoteRegionTokenBufferToken; // must NOT delete
     memory::RegionToken *pRemoteDynamicRegionSizeBufferToken; // must NOT delete
 
     void initFixedLocalBuffer() {
-		pLocalRegionTokenBuffer = new infinity::memory::Buffer(context, sizeof(infinity::memory::RegionToken));
+		pLocalRegionTokenBuffer = new memory::Buffer(context, sizeof(infinity::memory::RegionToken));
 		pLocalRegionTokenBufferToken = pLocalRegionTokenBuffer->createRegionToken();
-        pLocalDynamicRegionSizeBuffer = new infinity::memory::Buffer(context, sizeof(long));
+        pLocalDynamicRegionSizeBuffer = new memory::Buffer(context, sizeof(long));
         pLocalDynamicRegionSizeBufferToken = pLocalDynamicRegionSizeBuffer->createRegionToken();
+        *reinterpret_cast<long *>(pLocalDynamicRegionSizeBuffer->getData()) = 0;
+    }
+    void atomicSetLocalRegionTokenBuf(const memory::RegionToken &newToken) {
+
     }
 public:
     CRdmaConnectionInfo() : pQP(nullptr), pLocalRegionTokenBuffer(nullptr), pLocalRegionTokenBufferToken(nullptr),
-        pRemoteRegionTokenBufferToken(nullptr), pLocalDynamicRegionSizeBuffer(nullptr), pLocalDynamicRegionSizeBufferToken(nullptr)
+        pRemoteRegionTokenBufferToken(nullptr), pLocalDynamicRegionSizeBuffer(nullptr), pLocalDynamicRegionSizeBufferToken(nullptr),
+        pLocalBuffer(nullptr), pLocalBufferToken(nullptr)
         {}
     ~CRdmaConnectionInfo() {
         if(pQP) delete pQP;
@@ -53,16 +68,41 @@ public:
         if(pRemoteDynamicRegionSizeBufferToken) /*DO NOT DELETE IT!!!!!!!*/;
     }
 
+    void localWrite(const void *dataPtr, long dataSize) {
+        // TODO: add serial number
+        memory::Buffer *pNewBuffer = new memory::Buffer(context, dataSize);
+        memory::RegionToken *pNewBufferToken = pNewBuffer->createRegionToken();
+        atomicSetLocalRegionTokenBuf
+        
+    }
+
     void connectToRemote(const char *serverAddr, int serverPort) {
+        // Factory method
         initFixedLocalBuffer();
         qpUserDataType qpUserData(*pLocalRegionTokenBufferToken, *pLocalDynamicRegionSizeBufferToken);
-        pQP = qpFactory->connectToRemoteHost(serverAddr, serverPort, qpUserData, sizeof(qpUserData));
-        qpUserData = *reinterpret_cast<qpUserDataType *>(pQP->getUserData());
-        pRemoteRegionTokenBufferToken = &qpUserData.first;
-        pRemoteDynamicRegionSizeBufferToken = &qpUserData.second;
+        pQP = qpFactory->connectToRemoteHost(serverAddr, serverPort, &qpUserData, sizeof(qpUserData));
+        qpUserDataType qpRemoteUserData (*reinterpret_cast<qpUserDataType *>(pQP->getUserData()));
+        pRemoteRegionTokenBufferToken = &qpRemoteUserData.first;
+        pRemoteDynamicRegionSizeBufferToken = &qpRemoteUserData.second;
+        rdma_debug << "remote token1 is " << pRemoteRegionTokenBufferToken->getAddress() << ",local token1 is " << pLocalRegionTokenBufferToken->getAddress() << std::endl;
 
         // Create and register first local buffer.
         // Create another local buffer to indicate local buffer size, sothat remote know how many bytes to read.
+    }
+
+    static void bind(int listenPort) {
+        qpFactory->bindToPort(listenPort);
+    }
+    void waitAndAccept() {
+        // Factory method
+        initFixedLocalBuffer();
+        qpUserDataType qpUserData(*pLocalRegionTokenBufferToken, *pLocalDynamicRegionSizeBufferToken);
+        pQP = qpFactory->acceptIncomingConnection(&qpUserData, sizeof(qpUserData));
+        qpUserDataType qpRemoteUserData (*reinterpret_cast<qpUserDataType *>(pQP->getUserData()));
+        pRemoteRegionTokenBufferToken = &qpRemoteUserData.first;
+        pRemoteDynamicRegionSizeBufferToken = &qpRemoteUserData.second;
+        rdma_debug << "remote token1 is " << pRemoteRegionTokenBufferToken->getAddress() << ",local token1 is " << pLocalRegionTokenBufferToken->getAddress() << std::endl;
+        
     }
 };
 
@@ -77,7 +117,7 @@ JNIEXPORT jint JNICALL Java_org_apache_hadoop_hbase_ipc_RdmaNative_rdmaInitGloba
         qpFactory = new queues::QueuePairFactory(context);
     }
     catch (std::exception &ex) {
-        std::cerr << "RdmaNative: Exception: " << ex.what() << std::endl;
+        rdma_error << "Exception: " << ex.what() << std::endl;
         return 1;
     }
     return 0;
