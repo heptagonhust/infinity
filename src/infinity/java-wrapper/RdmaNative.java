@@ -7,20 +7,25 @@ import java.nio.ByteBuffer;
 public class RdmaNative {
     // This function must be called exactly once to construct necessary structs.
     // It will construct rdmaContext and other global var.
-    public native int rdmaInitGlobal();
+    public native boolean rdmaInitGlobal();
     // This function must be called exactly once to destruct global structs.
-    public native int rdmaDestroyGlobal();
+    public native void rdmaDestroyGlobal();
 
     // Connect to remote host. Blocked operation. If success, returnedConn.errorCode holds 0.
     public native RdmaClientConnection rdmaConnect(String addr, int port);
+    // This function must be called once by server, to bind a port.
+    public native boolean rdmaBind(int port);
     // Wait and accept a connection. Blocked operation. If success, returnedConn.errorCode holds 0.
-    public native RdmaServerConnection rdmaBlockedAccept(int port);
+    public native RdmaServerConnection rdmaBlockedAccept();
 
     public class RdmaClientConnection {
         private long ptrCxxClass;
+        private int errorCode;
 
         public native boolean isClosed();
-        public native boolean isConnectSucceed();
+        public boolean isConnectSucceed() {
+            return errorCode == 0;
+        }
         public native ByteBuffer readResponse(); // blocked. Will wait for the server for response.
         public native boolean writeQuery(ByteBuffer data); // blocked until success.
         public native boolean close(); // You may call it automatically in destructor. It MUST be called once.
@@ -52,9 +57,12 @@ public class RdmaNative {
             buffer, goto begin;
         */
         private long ptrCxxClass;
+        private int errorCode;
 
         public native boolean isClosed();
-        public native boolean isAcceptSucceed();
+        public boolean isAcceptSucceed() {
+            return errorCode == 0;
+        }
         public native boolean isQueryReadable();
         // use java global weak ref to prevent gc.
         public native ByteBuffer readQuery();

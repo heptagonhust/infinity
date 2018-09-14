@@ -17,14 +17,6 @@ JNIEXPORT jboolean JNICALL Java_org_apache_hadoop_hbase_ipc_RdmaNative_00024Rdma
 
 /*
  * Class:     org_apache_hadoop_hbase_ipc_RdmaNative_RdmaServerConnection
- * Method:    isAcceptSucceed
- * Signature: ()Z
- */
-JNIEXPORT jboolean JNICALL Java_org_apache_hadoop_hbase_ipc_RdmaNative_00024RdmaServerConnection_isAcceptSucceed
-  (JNIEnv *, jobject);
-
-/*
- * Class:     org_apache_hadoop_hbase_ipc_RdmaNative_RdmaServerConnection
  * Method:    isQueryReadable
  * Signature: ()Z
  */
