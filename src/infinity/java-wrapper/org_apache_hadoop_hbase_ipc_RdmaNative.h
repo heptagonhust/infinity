@@ -26,7 +26,7 @@ JNIEXPORT jint JNICALL Java_org_apache_hadoop_hbase_ipc_RdmaNative_rdmaDestroyGl
 /*
  * Class:     org_apache_hadoop_hbase_ipc_RdmaNative
  * Method:    rdmaConnect
- * Signature: (Ljava/lang/String;I)Lorg/apache/hadoop/hbase/ipc/RdmaNative/RdmaConnection;
+ * Signature: (Ljava/lang/String;I)Lorg/apache/hadoop/hbase/ipc/RdmaNative/RdmaClientConnection;
  */
 JNIEXPORT jobject JNICALL Java_org_apache_hadoop_hbase_ipc_RdmaNative_rdmaConnect
   (JNIEnv *, jobject, jstring, jint);
@@ -34,7 +34,7 @@ JNIEXPORT jobject JNICALL Java_org_apache_hadoop_hbase_ipc_RdmaNative_rdmaConnec
 /*
  * Class:     org_apache_hadoop_hbase_ipc_RdmaNative
  * Method:    rdmaBlockedAccept
- * Signature: (I)Lorg/apache/hadoop/hbase/ipc/RdmaNative/RdmaConnection;
+ * Signature: (I)Lorg/apache/hadoop/hbase/ipc/RdmaNative/RdmaServerConnection;
  */
 JNIEXPORT jobject JNICALL Java_org_apache_hadoop_hbase_ipc_RdmaNative_rdmaBlockedAccept
   (JNIEnv *, jobject, jint);

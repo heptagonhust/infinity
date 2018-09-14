@@ -21,67 +21,56 @@ queues::QueuePairFactory *qpFactory = new infinity::queues::QueuePairFactory(con
 #endif
 #define rdma_error std::cerr << "RdmaNative: "
 
-class CRdmaConnectionInfo {
+class CRdmaServerConnectionInfo {
 private:
-    /* 4ptr is maintained by C++ class.
-    private long ptrQP;
-    private long ptrRegionTokenBuf; // registered as fixed length while making conn.
-    private long ptrRemoteSerialBuf; // remote buffer serial number.
-    private long ptrDynamicDataBuf; // must register on every local write. Invalidate it only if ptrRegionTokenBuf has changed!
-    */
-    typedef std::pair<memory::RegionToken, memory::RegionToken> qpUserDataType;
-    queues::QueuePair *pQP; // must delete
+    //               < msgSize, DyBufTokenBufToken >
+    typedef std::pair<uint32_t, memory::RegionToken> magicAndTokenType;
+    queues::QueuePair *pQP = nullptr; // must delete
 
-    memory::Buffer *pLocalRegionTokenBuffer; // must delete
-    memory::RegionToken *pLocalRegionTokenBufferToken; // must delete
-    memory::Buffer *pLocalDynamicRegionSizeBuffer; // must delete
-    memory::RegionToken *pLocalDynamicRegionSizeBufferToken; // must delete
+    memory::Buffer *pDynamicBufferTokenBuffer = nullptr; // must delete
+    memory::RegionToken *pDynamicBufferTokenBufferToken = nullptr; // must delete
+    magicAndTokenType magicAndToken;
 
-    memory::Buffer *pLocalBuffer; // dynamically managed
-    memory::RegionToken *pLocalBufferToken;
-
-    memory::RegionToken *pRemoteRegionTokenBufferToken; // must NOT delete
-    memory::RegionToken *pRemoteDynamicRegionSizeBufferToken; // must NOT delete
+    memory::Buffer *pDynamicBuffer = nullptr; // must delete
+    memory::RegionToken *pDynamicBufferToken = nullptr; // must delete
+    long currentSize = 4096; // Default 4K
 
     void initFixedLocalBuffer() {
-		pLocalRegionTokenBuffer = new memory::Buffer(context, sizeof(infinity::memory::RegionToken));
-		pLocalRegionTokenBufferToken = pLocalRegionTokenBuffer->createRegionToken();
-        pLocalDynamicRegionSizeBuffer = new memory::Buffer(context, sizeof(long));
-        pLocalDynamicRegionSizeBufferToken = pLocalDynamicRegionSizeBuffer->createRegionToken();
-        *reinterpret_cast<long *>(pLocalDynamicRegionSizeBuffer->getData()) = 0;
-    }
-    void atomicSetLocalRegionTokenBuf(const memory::RegionToken &newToken) {
-
+        pDynamicBuffer = new memory::Buffer(context, currentSize);
+        pDynamicBufferToken = pDynamicBuffer->createRegionToken();
+        pDynamicBufferTokenBuffer = new memory::Buffer(context, sizeof(memory::RegionToken));
+        pDynamicBufferTokenBufferToken = pDynamicBufferTokenBuffer->createRegionToken();
+        magicAndToken.first = 0x00000000;
+        magicAndToken.second = *pDynamicBufferTokenBufferToken;
     }
 public:
-    CRdmaConnectionInfo() : pQP(nullptr), pLocalRegionTokenBuffer(nullptr), pLocalRegionTokenBufferToken(nullptr),
-        pRemoteRegionTokenBufferToken(nullptr), pLocalDynamicRegionSizeBuffer(nullptr), pLocalDynamicRegionSizeBufferToken(nullptr),
-        pLocalBuffer(nullptr), pLocalBufferToken(nullptr)
-        {}
+//    CRdmaServerConnectionInfo() : pDynamicBuffer(nullptr), pDynamicBufferToken(nullptr),
+//        pDynamicBufferTokenBuffer(nullptr), pDynamicBufferTokenBufferToken(nullptr),
+//        currentSize(4096), pQP(nullptr) {
+//
+//        }
     ~CRdmaConnectionInfo() {
         if(pQP) delete pQP;
-        if(pLocalRegionTokenBuffer) delete pLocalRegionTokenBuffer;
-        if(pLocalRegionTokenBufferToken) delete pLocalRegionTokenBufferToken;
-        if(pLocalDynamicRegionSizeBuffer) delete pLocalDynamicRegionSizeBuffer;
-        if(pLocalDynamicRegionSizeBufferToken) delete pLocalDynamicRegionSizeBufferToken;
-        if(pRemoteRegionTokenBufferToken) /*DO NOT DELETE IT!!!!!!!*/;
-        if(pRemoteDynamicRegionSizeBufferToken) /*DO NOT DELETE IT!!!!!!!*/;
+        if(pDynamicBuffer) delete pDynamicBuffer;
+        if(pDynamicBufferToken) delete pDynamicBufferToken;
+        if(pDynamicBufferTokenBuffer) delete pDynamicBufferTokenBuffer;
+        if(pDynamicBufferTokenBufferToken) delete pDynamicBufferTokenBufferToken;
     }
 
-    void localWrite(const void *dataPtr, long dataSize) {
-        // TODO: add serial number
-        memory::Buffer *pNewBuffer = new memory::Buffer(context, dataSize);
-        memory::RegionToken *pNewBufferToken = pNewBuffer->createRegionToken();
-        atomicSetLocalRegionTokenBuf
-        
+    void writeResponse(const void *dataPtr, long dataSize) {
+        if(magicAndToken.first != 0xaaaaaaaa)
+            throw std::runtime_error(std::string("write response: wrong magic. Want 0xaaaaaaaa, got ") + std::to_string(magicAndToken.first));
+        pDynamicBuffer->resize(dataSize);
+        // TODO: here's an extra copy. use dataPtr directly and jni global reference to avoid it!
+        std::memcpy(pDynamicBuffer->getData(), dataPtr, dataSize); 
+        if(0xaaaaaaaa != std::exchange(magicAndToken.first, 0x55555555)) // not atomic
+            throw std::runtime_error("write response: magic is changed while copying memory data.");
     }
 
     void connectToRemote(const char *serverAddr, int serverPort) {
         // Factory method
-        initFixedLocalBuffer();
-        qpUserDataType qpUserData(*pLocalRegionTokenBufferToken, *pLocalDynamicRegionSizeBufferToken);
-        pQP = qpFactory->connectToRemoteHost(serverAddr, serverPort, &qpUserData, sizeof(qpUserData));
-        qpUserDataType qpRemoteUserData (*reinterpret_cast<qpUserDataType *>(pQP->getUserData()));
+        pQP = qpFactory->connectToRemoteHost(serverAddr, serverPort, &magicAndToken, sizeof(magicAndToken));
+        magicAndTokenType qpRemoteUserData (*reinterpret_cast<magicAndTokenType *>(pQP->getUserData()));
         pRemoteRegionTokenBufferToken = &qpRemoteUserData.first;
         pRemoteDynamicRegionSizeBufferToken = &qpRemoteUserData.second;
         rdma_debug << "remote token1 is " << pRemoteRegionTokenBufferToken->getAddress() << ",local token1 is " << pLocalRegionTokenBufferToken->getAddress() << std::endl;
@@ -90,15 +79,9 @@ public:
         // Create another local buffer to indicate local buffer size, sothat remote know how many bytes to read.
     }
 
-    static void bind(int listenPort) {
-        qpFactory->bindToPort(listenPort);
-    }
     void waitAndAccept() {
-        // Factory method
-        initFixedLocalBuffer();
-        qpUserDataType qpUserData(*pLocalRegionTokenBufferToken, *pLocalDynamicRegionSizeBufferToken);
-        pQP = qpFactory->acceptIncomingConnection(&qpUserData, sizeof(qpUserData));
-        qpUserDataType qpRemoteUserData (*reinterpret_cast<qpUserDataType *>(pQP->getUserData()));
+        pQP = qpFactory->acceptIncomingConnection(&magicAndToken, sizeof(magicAndToken));
+        magicAndTokenType qpRemoteUserData (*reinterpret_cast<magicAndTokenType *>(pQP->getUserData()));
         pRemoteRegionTokenBufferToken = &qpRemoteUserData.first;
         pRemoteDynamicRegionSizeBufferToken = &qpRemoteUserData.second;
         rdma_debug << "remote token1 is " << pRemoteRegionTokenBufferToken->getAddress() << ",local token1 is " << pLocalRegionTokenBufferToken->getAddress() << std::endl;
@@ -165,9 +148,13 @@ JNIEXPORT jobject JNICALL Java_org_apache_hadoop_hbase_ipc_RdmaNative_rdmaConnec
     jboolean isCopy;
     const char *serverAddr = env->GetStringUTFChars(jServerAddr, &isCopy);
     if(serverAddr == NULL) REPORT_ERROR(3, "GetStringUTFChars from jServerAddr error.");
+
     // do connect
+    try {
+        CRdmaConnectionInfo *conn = new CRdmaConnectionInfo();
+        conn.connectToRemote(serverAddr, jServerPort);
 
-
+    }
 
 
 
