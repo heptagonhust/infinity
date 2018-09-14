@@ -94,13 +94,4 @@ examples:
 ##################################################
 
 java:
-	CPATH=$$CPATH:$$JAVA_HOME/include:src/ \
-	gcc -o $(RELEASE_FOLDER)/rdmaclientlib.so -fPIC -shared -I$$JAVA_HOME/include \
-	-Isrc/ -I$$JAVA_HOME/include/linux \
-	src/infinity/java-wrapper/java_wrapper_client.cpp -std=c++0x
-	
-	CPATH=$$CPATH:$$JAVA_HOME/include:src/ \
-	gcc -o $(RELEASE_FOLDER)/rdmaserverlib.so -fPIC -shared -I$$JAVA_HOME/include \
-	-Isrc/ -I$$JAVA_HOME/include/linux \
-	src/infinity/java-wrapper/java_wrapper_server.cpp -std=c++0x
-
+	$(CC) src/infinity/java-wrapper/RdmaNative.cc $(CC_FLAGS) -I src/ -I $(JAVA_HOME)/include -I $(JAVA_HOME)/include/linux -shared -fPIC -o $(RELEASE_FOLDER)/libRdmaNative.so

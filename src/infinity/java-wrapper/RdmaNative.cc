@@ -39,7 +39,7 @@ class CRdmaServerConnectionInfo {
     queues::QueuePair *pQP = nullptr; // must delete
 
     memory::Buffer *pDynamicBufferTokenBuffer = nullptr;           // must delete
-    memory::RegionToken *pDynamicBufferTokenBufferToken = nullptr; // must delete
+    memory::RegionToken *pDynamicBufferTokenBufferToken = nullptr; // must NOT delete. points to magicAndToken
     magicAndTokenType magicAndToken;
 
     memory::Buffer *pDynamicBuffer = nullptr;           // must delete
@@ -50,9 +50,8 @@ class CRdmaServerConnectionInfo {
         pDynamicBuffer = new memory::Buffer(context, currentSize);
         pDynamicBufferToken = pDynamicBuffer->createRegionToken();
         pDynamicBufferTokenBuffer = new memory::Buffer(context, sizeof(memory::RegionToken));
-        pDynamicBufferTokenBufferToken = pDynamicBufferTokenBuffer->createRegionToken();
         magicAndToken.first = 0x00000000;
-        magicAndToken.second = *pDynamicBufferTokenBufferToken;
+        pDynamicBufferTokenBufferToken = pDynamicBufferTokenBuffer->createRegionTokenAt(&magicAndToken.second);
     }
 
   public:
@@ -66,7 +65,6 @@ class CRdmaServerConnectionInfo {
         checkedDelete(pDynamicBuffer);
         checkedDelete(pDynamicBufferToken);
         checkedDelete(pDynamicBufferTokenBuffer);
-        checkedDelete(pDynamicBufferTokenBufferToken);
     }
 
     void waitAndAccept() {
@@ -92,8 +90,10 @@ class CRdmaServerConnectionInfo {
         pDynamicBuffer->resize(dataSize);
         // TODO: here's an extra copy. use dataPtr directly and jni global reference to avoid it!
         std::memcpy(pDynamicBuffer->getData(), dataPtr, dataSize);
-        if (0xaaaaaaaa != std::exchange(magicAndToken.first, 0x55555555)) // not atomic
+
+        if (0xaaaaaaaa != magicAndToken.first) // not atomic, use std::exchange for cxx14
             throw std::runtime_error("write response: magic is changed while copying memory data.");
+        magicAndToken.first = 0x55555555;
     }
 };
 
@@ -181,7 +181,7 @@ JNIEXPORT jobject JNICALL Java_org_apache_hadoop_hbase_ipc_RdmaNative_rdmaConnec
         env->SetLongField(jConn, jFieldCxxPtr, (jlong)pConn);
         env->SetIntField(jConn, jFieldErrCode, 0);
     }
-    catch(std::exception *e) {
+    catch(std::exception &e) {
         REPORT_ERROR(4, e.what());
     }
 
@@ -201,8 +201,8 @@ JNIEXPORT jboolean JNICALL Java_org_apache_hadoop_hbase_ipc_RdmaNative_rdmaBind(
     try {
         qpFactory->bindToPort(jListenPort);
     }
-    catch(std::exception *ex) {
-        REPORT_FATAL("Failed to bind to port " << std::to_string(jListenPort) << ex.what());
+    catch(std::exception &e) {
+        REPORT_FATAL("Failed to bind to port " << std::to_string(jListenPort) << e.what());
     }
 }
 
@@ -236,7 +236,7 @@ JNIEXPORT jobject JNICALL Java_org_apache_hadoop_hbase_ipc_RdmaNative_rdmaBlocke
         env->SetLongField(jConn, jFieldCxxPtr, (jlong)pConn);
         env->SetIntField(jConn, jFieldErrCode, 0);
     }
-    catch(std::exception *e) {
+    catch(std::exception &e) {
         REPORT_ERROR(4, e.what());
     }
     return jConn;
