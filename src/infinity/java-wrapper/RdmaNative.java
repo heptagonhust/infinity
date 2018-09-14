@@ -37,12 +37,14 @@ public class RdmaNative {
             holds the real data. The Magic is inited to 0x00000000 and set to 0xffffffff if DynamicBufferToken is ready to use.
             (For the initial 4K buffer, the magic is 0x00000000)
 
-        begin:
             On accepting connection, the server creates a 4K DynamicBuffer, and register it, put the token into DynamicBufferTokenBuffer.
+        begin:
+            DynamicBufferTokenBuffer has 3 area: magic, currentQuerySize, and DynamicBufferToken.
             Then the server send the DynamicBufferTokenBufferToken to client as userData. The client send its query size as userData.
-            If the client's query size is less than 4K, it just write it in the pre-allocated 4K buffer. If the query is larger, 
-            the client must read DynamicBufferTokenBuffer again and again, until the Magic is NOT 0x00000000. Then write the query in.
-            If the query is larger than 4K, the server must resize and register the DynamicBuffer, put its new token into 
+            If the client's query size is less than current DynamicBufferSize, it just write it in the existing dynamic buffer. 
+            If the query is larger, the client must read DynamicBufferTokenBuffer again and again, until the Magic is NOT 0x00000000. 
+            Then write the query in.
+            If the query is larger, the server must resize and re-register the DynamicBuffer, put its new token into 
             DynamicBufferTokenBuffer, and set the Magic to 0xffffffff atomically(will atomic CPU instruction works for rdma? It doesn't matter).
             
             Once the query is wrote into server, the client must set Magic to 0xaaaaaaaa(use compareAndSwap, if possible. It doesn't matter).

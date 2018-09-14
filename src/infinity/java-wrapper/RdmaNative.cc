@@ -14,9 +14,6 @@ using namespace infinity;
 #include <cstring>
 #include <iostream>
 
-core::Context *context = nullptr;
-queues::QueuePairFactory *qpFactory = nullptr;
-
 #ifdef RDEBUG
 #define rdma_debug std::cerr << "RdmaNative Debug: "
 #else
@@ -26,40 +23,52 @@ queues::QueuePairFactory *qpFactory = nullptr;
 #endif
 #define rdma_error std::cerr << "RdmaNative: "
 
+#ifndef uint32_t
+#define uint32_t unsigned int
+#endif
+#ifndef uint64_t
+#define uint64_t unsigned long long
+#endif
+
 template <typename T> inline void checkedDelete(T *&ptr) {
     if (ptr)
         delete ptr;
     ptr = nullptr;
 }
 
+core::Context *context = nullptr;
+queues::QueuePairFactory *qpFactory = nullptr;
+
+enum magic_t : uint32_t {MAGIC_CONNECTED=0x00000000, MAGIC_SERVER_BUFFER_READY=0xffffffff, MAGIC_QUERY_WROTE=0xaaaaaaaa, MAGIC_RESPONSE_READY=0x55555555};
+struct ServerStatusType{
+    uint32_t magic;
+    volatile uint64_t currentQueryLength;
+    memory::RegionToken dynamicBufferToken;
+};
+typedef memory::RegionToken DynamicBufferTokenBufferTokenType;
+
 class CRdmaServerConnectionInfo {
   private:
-    //               < msgSize, DyBufTokenBufToken >
-    typedef std::pair<uint32_t, memory::RegionToken> magicAndTokenType;
     queues::QueuePair *pQP = nullptr; // must delete
 
     memory::Buffer *pDynamicBufferTokenBuffer = nullptr;           // must delete
-    memory::RegionToken *pDynamicBufferTokenBufferToken = nullptr; // must NOT delete. points to magicAndToken
-    magicAndTokenType magicAndToken;
+    memory::RegionToken *pDynamicBufferTokenBufferToken = nullptr; // must delete
+    #define pServerStatus ((ServerStatusType *)pDynamicBufferTokenBuffer->getData())
 
     memory::Buffer *pDynamicBuffer = nullptr;           // must delete
     memory::RegionToken *pDynamicBufferToken = nullptr; // must delete
-    long currentSize = 4096;                            // Default 4K
+    uint64_t currentSize = 4096;                            // Default 4K
 
     void initFixedLocalBuffer() {
         pDynamicBuffer = new memory::Buffer(context, currentSize);
         pDynamicBufferToken = pDynamicBuffer->createRegionToken();
-        pDynamicBufferTokenBuffer = new memory::Buffer(context, sizeof(memory::RegionToken));
-        magicAndToken.first = 0x00000000;
-        pDynamicBufferTokenBufferToken = pDynamicBufferTokenBuffer->createRegionTokenAt(&magicAndToken.second);
+        pDynamicBufferTokenBuffer = new memory::Buffer(context, sizeof(ServerStatusType));
+        pDynamicBufferTokenBufferToken = pDynamicBufferTokenBuffer->createRegionToken();
+        pServerStatus->magic = MAGIC_CONNECTED;
+        pServerStatus->currentQueryLength = 0;
     }
 
   public:
-    //    CRdmaServerConnectionInfo() : pDynamicBuffer(nullptr), pDynamicBufferToken(nullptr),
-    //        pDynamicBufferTokenBuffer(nullptr), pDynamicBufferTokenBufferToken(nullptr),
-    //        currentSize(4096), pQP(nullptr) {
-    //
-    //        }
     ~CRdmaServerConnectionInfo() {
         checkedDelete(pQP);
         checkedDelete(pDynamicBuffer);
@@ -68,41 +77,96 @@ class CRdmaServerConnectionInfo {
     }
 
     void waitAndAccept() {
-        pQP = qpFactory->acceptIncomingConnection(&magicAndToken, sizeof(magicAndToken));
-        long cliQueryLength(*reinterpret_cast<long *>(pQP->getUserData()));
-        rdma_debug << "accepted. clientQueryLength is " << cliQueryLength << std::endl;
+        initFixedLocalBuffer();
+        pQP = qpFactory->acceptIncomingConnection(pDynamicBufferTokenBufferToken, sizeof(DynamicBufferTokenBufferTokenType));
     }
 
-    bool isQueryReadable() { return magicAndToken.first == 0xaaaaaaaa; }
+    bool isQueryReadable() {
+        if(pServerStatus->magic == MAGIC_CONNECTED && pServerStatus->currentQueryLength != 0) {
+            // Warning: pServerStatus->currentQueryLength may be under editing! The read value maybe broken!
+            // So I set currentQueryLength as volatile and read it again.
+            broken_value_read_again:
+            uint64_t queryLength = pServerStatus->currentQueryLength;
+            if(queryLength != pServerStatus->currentQueryLength)
+                goto broken_value_read_again;
+            
+            if(queryLength > currentSize) {
+                pDynamicBuffer->resize(queryLength);
+                checkedDelete(pDynamicBufferToken);
+                pDynamicBufferToken = pDynamicBuffer->createRegionTokenAt(&pServerStatus->dynamicBufferToken);
+            }
+            pServerStatus->magic == MAGIC_SERVER_BUFFER_READY;
+        }
+        return pServerStatus->magic == MAGIC_QUERY_WROTE;
+    }
 
-    void readQuery(void *&dataPtr, long &dataSize) {
-        if (magicAndToken.first != 0xaaaaaaaa)
-            throw std::runtime_error(std::string("read query: wrong magic. Want 0xaaaaaaaa, got ") +
-                                     std::to_string(magicAndToken.first));
+    void readQuery(void *&dataPtr, uint64_t &dataSize) {
+        if (pServerStatus->magic != MAGIC_QUERY_WROTE)
+            throw std::runtime_error(std::string("read query: wrong magic. Want 0xaaaaaaaa, got ") + std::to_string(pServerStatus->magic));
         dataPtr = pDynamicBuffer->getData();
         dataSize = pDynamicBuffer->getSizeInBytes();
     }
 
-    void writeResponse(const void *dataPtr, long dataSize) {
-        if (magicAndToken.first != 0xaaaaaaaa)
+    void writeResponse(const void *dataPtr, uint64_t dataSize) {
+        if (pServerStatus->magic != MAGIC_QUERY_WROTE)
             throw std::runtime_error(std::string("write response: wrong magic. Want 0xaaaaaaaa, got ") +
-                                     std::to_string(magicAndToken.first));
+                                     std::to_string(pServerStatus->magic));
         pDynamicBuffer->resize(dataSize);
         // TODO: here's an extra copy. use dataPtr directly and jni global reference to avoid it!
         std::memcpy(pDynamicBuffer->getData(), dataPtr, dataSize);
 
-        if (0xaaaaaaaa != magicAndToken.first) // not atomic, use std::exchange for cxx14
+        if (pServerStatus->magic != MAGIC_QUERY_WROTE)
             throw std::runtime_error("write response: magic is changed while copying memory data.");
-        magicAndToken.first = 0x55555555;
+        pServerStatus->magic = MAGIC_RESPONSE_READY;
     }
 };
 
 class CRdmaClientConnectionInfo {
+    queues::QueuePair *pQP = nullptr; // must delete
+    memory::RegionToken *pRemoteDynamicBufferTokenBufferToken = nullptr; // must not delete
+    uint64_t lastQuerySize = 4096; // If this query is smaller than last, do not wait for the server to allocate space.
 
 public:
-    void connectToRemote(const char *serverAddr, int serverPort) {
-
+    ~CRdmaClientConnectionInfo() {
+        checkedDelete(pQP);
     }
+    void connectToRemote(const char *serverAddr, int serverPort) {
+        pQP = qpFactory->connectToRemoteHost(serverAddr, serverPort);
+        pRemoteDynamicBufferTokenBufferToken = reinterpret_cast<memory::RegionToken *>(pQP->getUserData());
+    }
+
+    void writeQuery(void *dataPtr, uint64_t dataSize) {
+        memory::Buffer wrappedDataBuffer(context, dataPtr, dataSize);
+        memory::Buffer wrappedSizeBuffer(context, &dataSize, sizeof(dataSize));
+#if __cplusplus < 201100L
+        static_assert(std::is_pod<ServerStatusType>::value == true, "ServerStatusType must be pod to use C offsetof.");
+#else
+        static_assert(std::is_standard_layout<ServerStatusType>::value == true, "ServerStatusType must be standard layout in cxx11 to use C offsetof.");
+#endif
+        requests::RequestToken reqToken(context);
+        pQP->write(&wrappedSizeBuffer, 0, pRemoteDynamicBufferTokenBufferToken, offsetof(ServerStatusType, currentQueryLength), sizeof(dataSize), queues::OperationFlags(), &reqToken);
+        reqToken.waitUntilCompleted();
+        if(dataSize > lastQuerySize) {
+            // Wait for the server allocating buffer...
+            memory::Buffer serverMagicBuffer(context, sizeof(ServerStatusType::magic));
+            while(true) {
+                static_assert(offsetof(ServerStatusType, magic) == 0, "Use read with more arg if offsetof(magic) is not 0.");
+                pQP->read(&serverMagicBuffer, pRemoteDynamicBufferTokenBufferToken, sizeof(ServerStatusType::magic), &reqToken);
+                reqToken.waitUntilCompleted();
+                //if(MAGIC_CONNECTED != *(uint32_t *)serverMagicBuffer.getData())
+                if(MAGIC_SERVER_BUFFER_READY == *(uint32_t *)serverMagicBuffer.getData())
+                    break; // Remote buffer is ready. Fire!
+            }
+        }
+        memory::Buffer tempTokenBuffer(context, sizeof(ServerStatusType));
+        pQP->read(&tempTokenBuffer, pRemoteDynamicBufferTokenBufferToken, &reqToken);
+        reqToken.waitUntilCompleted();
+        memory::RegionToken remoteDynamicBufferToken = ((ServerStatusType *)tempTokenBuffer.getData())->dynamicBufferToken;
+        pQP->write(&wrappedDataBuffer, &remoteDynamicBufferToken, reqToken);
+        reqToken.waitUntilCompleted();
+    }
+
+
 };
 
 /*
@@ -177,7 +241,7 @@ JNIEXPORT jobject JNICALL Java_org_apache_hadoop_hbase_ipc_RdmaNative_rdmaConnec
         jfieldID jFieldCxxPtr = env->GetFieldID(jConnCls, "ptrCxxClass", "J");
         if(jFieldCxxPtr == NULL)
             REPORT_ERROR(5, "Unable to getFieldId `ptrCxxClass`");
-        static_assert(sizeof(jlong) == sizeof(CRdmaClientConnectionInfo *), "jlong must have same size with C++ Pointer");
+        static_assert(sizeof(jlong) == sizeof(CRdmaClientConnectionInfo *), "juint64_t must have same size with C++ Pointer");
         env->SetLongField(jConn, jFieldCxxPtr, (jlong)pConn);
         env->SetIntField(jConn, jFieldErrCode, 0);
     }
@@ -232,8 +296,8 @@ JNIEXPORT jobject JNICALL Java_org_apache_hadoop_hbase_ipc_RdmaNative_rdmaBlocke
         jfieldID jFieldCxxPtr = env->GetFieldID(jConnCls, "ptrCxxClass", "J");
         if(jFieldCxxPtr == NULL)
             REPORT_ERROR(5, "Unable to getFieldId `ptrCxxClass`");
-        static_assert(sizeof(jlong) == sizeof(CRdmaClientConnectionInfo *), "jlong must have same size with C++ Pointer");
-        env->SetLongField(jConn, jFieldCxxPtr, (jlong)pConn);
+        static_assert(sizeof(juint64_t) == sizeof(CRdmaClientConnectionInfo *), "juint64_t must have same size with C++ Pointer");
+        env->SetLongField(jConn, jFieldCxxPtr, (juint64_t)pConn);
         env->SetIntField(jConn, jFieldErrCode, 0);
     }
     catch(std::exception &e) {
