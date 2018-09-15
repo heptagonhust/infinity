@@ -60,7 +60,7 @@ BUILD_DIRECTORIES	= $(patsubst $(SOURCE_FOLDER)/%,$(BUILD_FOLDER)/%,$(SOURCE_DIR
 
 ##################################################
 
-all: library examples
+all: library examples java java-test
 
 ##################################################
 
@@ -93,5 +93,8 @@ examples:
 
 ##################################################
 
-java:
-	$(CC) src/infinity/java-wrapper/RdmaNative.cc src/infinity/java-wrapper/RdmaImpl.cc $(CC_FLAGS) -I src/ -I $(JAVA_HOME)/include -I $(JAVA_HOME)/include/linux -shared -fPIC -o $(RELEASE_FOLDER)/libRdmaNative.so
+java: library
+	$(CC) src/infinity/java-wrapper/RdmaNative.cc src/infinity/java-wrapper/RdmaImpl.cc $(CC_FLAGS) -I src/ -I $(JAVA_HOME)/include -I $(JAVA_HOME)/include/linux -shared -fPIC -L $(RELEASE_FOLDER) $(LD_FLAGS) -o $(RELEASE_FOLDER)/libRdmaNative.so
+
+java-test: library
+	$(CC) src/infinity/java-wrapper/RdmaNative.cc src/infinity/java-wrapper/RdmaImpl.cc src/infinity/java-wrapper/test.cc $(CC_FLAGS) -I src/ -I $(JAVA_HOME)/include -I $(JAVA_HOME)/include/linux -L $(RELEASE_FOLDER) $(LD_FLAGS) -o $(RELEASE_FOLDER)/RdmaNativeTest
