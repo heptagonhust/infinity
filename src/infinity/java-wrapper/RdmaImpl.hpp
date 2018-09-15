@@ -12,6 +12,7 @@ using namespace infinity;
 #include <cstdint>
 #include <cstring>
 #include <iostream>
+#include "fuckhust.hpp"
 
 #ifdef RDEBUG
 #define rdma_debug std::cerr << "RdmaNative Debug: "
