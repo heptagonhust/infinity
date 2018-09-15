@@ -12,6 +12,7 @@ using namespace infinity;
 #include <cstdint>
 #include <cstring>
 #include <iostream>
+#include <stdexcept>
 #include "fuckhust.hpp"
 
 #ifdef RDEBUG
@@ -39,12 +40,23 @@ template <typename T> inline void checkedDelete(T *&ptr) {
 extern core::Context *context;
 extern queues::QueuePairFactory *qpFactory;
 
+#if HUST
+#define magic_t uint32_t
+enum {
+#else
 enum magic_t : uint32_t {
+#endif
     MAGIC_CONNECTED = 0x00000000,
     MAGIC_SERVER_BUFFER_READY = 0xffffffff,
     MAGIC_QUERY_WROTE = 0xaaaaaaaa,
     MAGIC_RESPONSE_READY = 0x55555555
 };
+#if HUST
+namespace std {
+extern std::string to_string(magic_t &m);
+extern std::string to_string(int &m);
+}
+#endif
 struct ServerStatusType {
     magic_t magic;
     volatile uint64_t currentQueryLength;
@@ -132,6 +144,9 @@ public:
     }
 };
 
+#if HUST
+#endif
+
 class CRdmaClientConnectionInfo {
     queues::QueuePair *pQP;                                    // must delete
     memory::RegionToken *pRemoteDynamicBufferTokenBufferToken; // must not delete
@@ -140,17 +155,19 @@ class CRdmaClientConnectionInfo {
     void rdmaSetServerMagic(magic_t magic) {
         // write the magic to MAGIC_QUERY_WROTE
         requests::RequestToken reqToken(context);
-        memory::Buffer serverMagicBuffer(context, sizeof(ServerStatusType::magic));
+        memory::Buffer serverMagicBuffer(context, sizeof(magic_t));
         *(magic_t *)serverMagicBuffer.getData() = magic;
+#if !HUST
         static_assert(offsetof(ServerStatusType, magic) == 0, "Use read with more arg if offsetof(magic) is not 0.");
-        pQP->write(&serverMagicBuffer, pRemoteDynamicBufferTokenBufferToken, sizeof(ServerStatusType::magic), &reqToken);
+#endif
+        pQP->write(&serverMagicBuffer, pRemoteDynamicBufferTokenBufferToken, sizeof(magic_t), &reqToken);
         reqToken.waitUntilCompleted();
     }
 
     magic_t rdmaGetServerMagic() {
-        memory::Buffer serverMagicBuffer(context, sizeof(ServerStatusType::magic));
+        memory::Buffer serverMagicBuffer(context, sizeof(magic_t));
         requests::RequestToken reqToken(context);
-        pQP->read(&serverMagicBuffer, pRemoteDynamicBufferTokenBufferToken, sizeof(ServerStatusType::magic), &reqToken);
+        pQP->read(&serverMagicBuffer, pRemoteDynamicBufferTokenBufferToken, sizeof(magic_t), &reqToken);
         reqToken.waitUntilCompleted();
         return *(magic_t *)serverMagicBuffer.getData();
     }
@@ -169,11 +186,13 @@ class CRdmaClientConnectionInfo {
     void writeQuery(void *dataPtr, uint64_t dataSize) {
         memory::Buffer wrappedDataBuffer(context, dataPtr, dataSize);
         memory::Buffer wrappedSizeBuffer(context, &dataSize, sizeof(dataSize));
+#if !HUST
 #if __cplusplus < 201100L
         static_assert(std::is_pod<ServerStatusType>::value == true, "ServerStatusType must be pod to use C offsetof.");
 #else
         static_assert(std::is_standard_layout<ServerStatusType>::value == true,
                       "ServerStatusType must be standard layout in cxx11 to use C offsetof.");
+#endif
 #endif
         requests::RequestToken reqToken(context);
         // write data size.
