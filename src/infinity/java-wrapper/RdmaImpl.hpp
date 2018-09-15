@@ -54,15 +54,15 @@ typedef memory::RegionToken DynamicBufferTokenBufferTokenType;
 
 class CRdmaServerConnectionInfo {
   private:
-    queues::QueuePair *pQP = nullptr; // must delete
+    queues::QueuePair *pQP; // must delete
 
-    memory::Buffer *pDynamicBufferTokenBuffer = nullptr;           // must delete
-    memory::RegionToken *pDynamicBufferTokenBufferToken = nullptr; // must delete
+    memory::Buffer *pDynamicBufferTokenBuffer;           // must delete
+    memory::RegionToken *pDynamicBufferTokenBufferToken; // must delete
 #define pServerStatus ((ServerStatusType *)pDynamicBufferTokenBuffer->getData())
 
-    memory::Buffer *pDynamicBuffer = nullptr;           // must delete
-    memory::RegionToken *pDynamicBufferToken = nullptr; // must delete
-    uint64_t currentSize = 4096;                        // Default 4K
+    memory::Buffer *pDynamicBuffer;           // must delete
+    memory::RegionToken *pDynamicBufferToken; // must delete
+    uint64_t currentSize;                        // Default 4K
 
     void initFixedLocalBuffer() {
         pDynamicBuffer = new memory::Buffer(context, currentSize);
@@ -73,7 +73,11 @@ class CRdmaServerConnectionInfo {
         pServerStatus->currentQueryLength = 0;
     }
 
-  public:
+public:
+    CRdmaServerConnectionInfo() : pQP(nullptr), pDynamicBuffer(nullptr), pDynamicBufferToken(nullptr),
+    pDynamicBufferTokenBuffer(nullptr), pDynamicBufferTokenBufferToken(nullptr), currentSize(4096) {
+
+    }
     ~CRdmaServerConnectionInfo() {
         checkedDelete(pQP);
         checkedDelete(pDynamicBuffer);
@@ -129,9 +133,9 @@ class CRdmaServerConnectionInfo {
 };
 
 class CRdmaClientConnectionInfo {
-    queues::QueuePair *pQP = nullptr;                                    // must delete
-    memory::RegionToken *pRemoteDynamicBufferTokenBufferToken = nullptr; // must not delete
-    uint64_t lastResponseSize = 4096; // If this query is smaller than last, do not wait for the server to allocate space.
+    queues::QueuePair *pQP;                                    // must delete
+    memory::RegionToken *pRemoteDynamicBufferTokenBufferToken; // must not delete
+    uint64_t lastResponseSize; // If this query is smaller than last, do not wait for the server to allocate space.
 
     void rdmaSetServerMagic(magic_t magic) {
         // write the magic to MAGIC_QUERY_WROTE
@@ -152,6 +156,10 @@ class CRdmaClientConnectionInfo {
     }
 
   public:
+    CRdmaClientConnectionInfo() : pQP(nullptr), pRemoteDynamicBufferTokenBufferToken(nullptr),
+    lastResponseSize(4096) {
+
+    }
     ~CRdmaClientConnectionInfo() { checkedDelete(pQP); }
     void connectToRemote(const char *serverAddr, int serverPort) {
         pQP = qpFactory->connectToRemoteHost(serverAddr, serverPort);
