@@ -26,6 +26,8 @@ public class RdmaNative {
         public boolean isConnectSucceed() {
             return errorCode == 0;
         }
+        // returned ByteBuffer MAY be invalidated on next readResponse(). (invalidated if the bytebuffer is created without copying data)
+        // return null object if the read failed.
         public native ByteBuffer readResponse(); // blocked. Will wait for the server for response.
         public native boolean writeQuery(ByteBuffer data); // blocked until success.
         public native boolean close(); // You may call it automatically in destructor. It MUST be called once.
@@ -66,7 +68,8 @@ public class RdmaNative {
             return errorCode == 0;
         }
         public native boolean isQueryReadable();
-        // use java global weak ref to prevent gc.
+        // returned ByteBuffer MAY be invalidated on next readQuery()
+        // return null object if the read failed.
         public native ByteBuffer readQuery();
         public native boolean writeResponse(ByteBuffer data);
         public native boolean close(); // You may call it automatically in destructor. It MUST be called once.

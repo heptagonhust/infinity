@@ -209,6 +209,7 @@ class CRdmaClientConnectionInfo {
 
         pResponseDataBuf = pResponseData;
         lastResponseSize = pResponseData->getSizeInBytes();
+        // WARNING: You must delete the pResponseDataBuf after using it!!!
     }
 };
 
@@ -350,18 +351,16 @@ JNIEXPORT jobject JNICALL Java_org_apache_hadoop_hbase_ipc_RdmaNative_rdmaBlocke
 
 ////////////////////////////////////// RdmaClientConnection Methods
 #undef REPORT_ERROR
-#define REPORT_ERROR(msg)                                                                                                \
+#define REPORT_ERROR(msg)                                                                                                      \
     do {                                                                                                                       \
         std::cerr << "RdmaNative ERROR: " << msg << "Returning error code to java..." << std::endl;                            \
-        return JNI_FALSE; \
+        return JNI_FALSE;                                                                                                      \
     } while (0)
-#define REPORT_ERROR_B(msg)                                                                                                \
+#define REPORT_ERROR_B(msg)                                                                                                    \
     do {                                                                                                                       \
         std::cerr << "RdmaNative ERROR: " << msg << "Returning error code to java..." << std::endl;                            \
-        return NULL; \
+        return NULL;                                                                                                           \
     } while (0)
-
-
 
 /*
  * Class:     org_apache_hadoop_hbase_ipc_RdmaNative_RdmaClientConnection
@@ -378,7 +377,8 @@ JNIEXPORT jboolean JNICALL Java_org_apache_hadoop_hbase_ipc_RdmaNative_00024Rdma
  * Signature: ()Ljava/nio/ByteBuffer;
  */
 memory::Buffer *previousResponseDataPtr = nullptr;
-JNIEXPORT jobject JNICALL Java_org_apache_hadoop_hbase_ipc_RdmaNative_00024RdmaClientConnection_readResponse(JNIEnv *env, jobject self) {
+JNIEXPORT jobject JNICALL Java_org_apache_hadoop_hbase_ipc_RdmaNative_00024RdmaClientConnection_readResponse(JNIEnv *env,
+                                                                                                             jobject self) {
     static const jclass jConnCls = env->FindClass("org/apache/hadoop/hbase/ipc/RdmaNative/RdmaClientConnection");
     if (jConnCls == NULL)
         REPORT_FATAL("Unable to find class org/apache/hadoop/hbase/ipc/RdmaNative/RdmaClientConnection.");
@@ -387,15 +387,15 @@ JNIEXPORT jobject JNICALL Java_org_apache_hadoop_hbase_ipc_RdmaNative_00024RdmaC
         REPORT_ERROR_B("Unable to getFieldId `ptrCxxClass`");
     jlong cxxPtr = env->GetLongField(self, jFieldCxxPtr);
     CRdmaClientConnectionInfo *pConn = (CRdmaClientConnectionInfo *)cxxPtr;
-    if(pConn == nullptr) REPORT_ERROR("cxx conn ptr is nullptr. is the connection closed?");
+    if (pConn == nullptr)
+        REPORT_ERROR_B("cxx conn ptr is nullptr. is the connection closed?");
 
     checkedDelete(previousResponseDataPtr);
     try {
         pConn->readResponse(previousResponseDataPtr);
-        if(previousResponseDataPtr == nullptr)
+        if (previousResponseDataPtr == nullptr)
             throw std::runtime_error("readResponse return null");
-    }
-    catch(std::exception &e) {
+    } catch (std::exception &e) {
         REPORT_ERROR_B(e.what());
     }
     return env->NewDirectByteBuffer(previousResponseDataPtr->getData(), previousResponseDataPtr->getSizeInBytes());
@@ -406,8 +406,8 @@ JNIEXPORT jobject JNICALL Java_org_apache_hadoop_hbase_ipc_RdmaNative_00024RdmaC
  * Method:    writeQuery
  * Signature: (Ljava/nio/ByteBuffer;)Z
  */
-JNIEXPORT jboolean JNICALL Java_org_apache_hadoop_hbase_ipc_RdmaNative_00024RdmaClientConnection_writeQuery(JNIEnv * env, jobject self,
-                                                                                                            jobject jDataBuffer) {
+JNIEXPORT jboolean JNICALL Java_org_apache_hadoop_hbase_ipc_RdmaNative_00024RdmaClientConnection_writeQuery(
+    JNIEnv *env, jobject self, jobject jDataBuffer) {
     static const jclass jConnCls = env->FindClass("org/apache/hadoop/hbase/ipc/RdmaNative/RdmaClientConnection");
     if (jConnCls == NULL)
         REPORT_FATAL("Unable to find class org/apache/hadoop/hbase/ipc/RdmaNative/RdmaClientConnection.");
@@ -416,14 +416,15 @@ JNIEXPORT jboolean JNICALL Java_org_apache_hadoop_hbase_ipc_RdmaNative_00024Rdma
         REPORT_ERROR("Unable to getFieldId `ptrCxxClass`");
     jlong cxxPtr = env->GetLongField(self, jFieldCxxPtr);
     CRdmaClientConnectionInfo *pConn = (CRdmaClientConnectionInfo *)cxxPtr;
-    if(pConn == nullptr) REPORT_ERROR("cxx conn ptr is nullptr. is the connection closed?");
+    if (pConn == nullptr)
+        REPORT_ERROR("cxx conn ptr is nullptr. is the connection closed?");
 
     void *tmpJAddr = env->GetDirectBufferAddress(jDataBuffer);
-    if(tmpJAddr == NULL) REPORT_ERROR("jDataBuffer addr is null");
+    if (tmpJAddr == NULL)
+        REPORT_ERROR("jDataBuffer addr is null");
     try {
         pConn->writeQuery(tmpJAddr, env->GetDirectBufferCapacity(jDataBuffer));
-    }
-    catch(std::exception &e) {
+    } catch (std::exception &e) {
         REPORT_ERROR(e.what());
     }
 
@@ -435,7 +436,8 @@ JNIEXPORT jboolean JNICALL Java_org_apache_hadoop_hbase_ipc_RdmaNative_00024Rdma
  * Method:    close
  * Signature: ()Z
  */
-JNIEXPORT jboolean JNICALL Java_org_apache_hadoop_hbase_ipc_RdmaNative_00024RdmaClientConnection_close(JNIEnv *env, jobject self) {
+JNIEXPORT jboolean JNICALL Java_org_apache_hadoop_hbase_ipc_RdmaNative_00024RdmaClientConnection_close(JNIEnv *env,
+                                                                                                       jobject self) {
     static const jclass jConnCls = env->FindClass("org/apache/hadoop/hbase/ipc/RdmaNative/RdmaClientConnection");
     if (jConnCls == NULL)
         REPORT_FATAL("Unable to find class org/apache/hadoop/hbase/ipc/RdmaNative/RdmaClientConnection.");
@@ -444,7 +446,124 @@ JNIEXPORT jboolean JNICALL Java_org_apache_hadoop_hbase_ipc_RdmaNative_00024Rdma
         REPORT_ERROR("Unable to getFieldId `ptrCxxClass`");
     jlong cxxPtr = env->GetLongField(self, jFieldCxxPtr);
     CRdmaClientConnectionInfo *pConn = (CRdmaClientConnectionInfo *)cxxPtr;
-    if(pConn == nullptr) REPORT_ERROR("cxx conn ptr is nullptr. is the connection closed?");
+    if (pConn == nullptr)
+        REPORT_ERROR("cxx conn ptr is nullptr. is the connection closed?");
+
+    checkedDelete(pConn);
+    return JNI_TRUE;
+}
+
+/////////////////////////////////////////////////////////RdmaServerArea
+/*
+ * Class:     org_apache_hadoop_hbase_ipc_RdmaNative_RdmaServerConnection
+ * Method:    isClosed
+ * Signature: ()Z
+ */
+JNIEXPORT jboolean JNICALL Java_org_apache_hadoop_hbase_ipc_RdmaNative_00024RdmaServerConnection_isClosed(JNIEnv *, jobject) {
+    return JNI_TRUE;
+}
+
+/*
+ * Class:     org_apache_hadoop_hbase_ipc_RdmaNative_RdmaServerConnection
+ * Method:    isQueryReadable
+ * Signature: ()Z
+ */
+JNIEXPORT jboolean JNICALL Java_org_apache_hadoop_hbase_ipc_RdmaNative_00024RdmaServerConnection_isQueryReadable(JNIEnv * env,
+                                                                                                                 jobject self) {
+    static const jclass jConnCls = env->FindClass("org/apache/hadoop/hbase/ipc/RdmaNative/RdmaServerConnection");
+    if (jConnCls == NULL)
+        REPORT_FATAL("Unable to find class org/apache/hadoop/hbase/ipc/RdmaNative/RdmaServerConnection.");
+    jfieldID jFieldCxxPtr = env->GetFieldID(jConnCls, "ptrCxxClass", "J");
+    if (jFieldCxxPtr == NULL)
+        REPORT_FATAL("Unable to getFieldId `ptrCxxClass`");
+    jlong cxxPtr = env->GetLongField(self, jFieldCxxPtr);
+    CRdmaServerConnectionInfo *pConn = (CRdmaServerConnectionInfo *)cxxPtr;
+    if (pConn == nullptr)
+        REPORT_FATAL("cxx conn ptr is nullptr. is the connection closed?");
+
+    try {
+        return pConn->isQueryReadable();
+    }
+    catch(std::exception &e) {
+        REPORT_FATAL(e.what());
+    }
+}
+
+/*
+ * Class:     org_apache_hadoop_hbase_ipc_RdmaNative_RdmaServerConnection
+ * Method:    readQuery
+ * Signature: ()Ljava/nio/ByteBuffer;
+ */
+JNIEXPORT jobject JNICALL Java_org_apache_hadoop_hbase_ipc_RdmaNative_00024RdmaServerConnection_readQuery(JNIEnv *env, jobject self) {
+    static const jclass jConnCls = env->FindClass("org/apache/hadoop/hbase/ipc/RdmaNative/RdmaServerConnection");
+    if (jConnCls == NULL)
+        REPORT_FATAL("Unable to find class org/apache/hadoop/hbase/ipc/RdmaNative/RdmaServerConnection.");
+    jfieldID jFieldCxxPtr = env->GetFieldID(jConnCls, "ptrCxxClass", "J");
+    if (jFieldCxxPtr == NULL)
+        REPORT_ERROR_B("Unable to getFieldId `ptrCxxClass`");
+    jlong cxxPtr = env->GetLongField(self, jFieldCxxPtr);
+    CRdmaServerConnectionInfo *pConn = (CRdmaServerConnectionInfo *)cxxPtr;
+    if (pConn == nullptr)
+        REPORT_ERROR_B("cxx conn ptr is nullptr. is the connection closed?");
+
+    try {
+        void *dat = nullptr;
+        uint64_t size = 0;
+        pConn->readQuery(dat, size);
+        return env->NewDirectByteBuffer(dat, size);
+    }
+    catch(std::exception &e) {
+        REPORT_ERROR_B(e.what());
+    }
+}
+
+/*
+ * Class:     org_apache_hadoop_hbase_ipc_RdmaNative_RdmaServerConnection
+ * Method:    writeResponse
+ * Signature: (Ljava/nio/ByteBuffer;)Z
+ */
+JNIEXPORT jboolean JNICALL Java_org_apache_hadoop_hbase_ipc_RdmaNative_00024RdmaServerConnection_writeResponse(JNIEnv * env,
+jobject self,
+jobject jDataBuffer) {
+    static const jclass jConnCls = env->FindClass("org/apache/hadoop/hbase/ipc/RdmaNative/RdmaServerConnection");
+    if (jConnCls == NULL)
+        REPORT_FATAL("Unable to find class org/apache/hadoop/hbase/ipc/RdmaNative/RdmaServerConnection.");
+    jfieldID jFieldCxxPtr = env->GetFieldID(jConnCls, "ptrCxxClass", "J");
+    if (jFieldCxxPtr == NULL)
+        REPORT_ERROR("Unable to getFieldId `ptrCxxClass`");
+    jlong cxxPtr = env->GetLongField(self, jFieldCxxPtr);
+    CRdmaServerConnectionInfo *pConn = (CRdmaServerConnectionInfo *)cxxPtr;
+    if (pConn == nullptr)
+        REPORT_ERROR("cxx conn ptr is nullptr. is the connection closed?");
+
+    try {
+        void *tmpDataBuf = env->GetDirectBufferAddress(jDataBuffer);
+        if(tmpDataBuf == nullptr)
+            REPORT_ERROR("writeresponse jDataBuffer addr is null");
+        pConn->writeResponse(tmpDataBuf, env->GetDirectBufferCapacity(jDataBuffer));
+    }
+    catch(std::exception &e) {
+        REPORT_ERROR(e.what());
+    }
+    return JNI_TRUE;
+}
+
+/*
+ * Class:     org_apache_hadoop_hbase_ipc_RdmaNative_RdmaServerConnection
+ * Method:    close
+ * Signature: ()Z
+ */
+JNIEXPORT jboolean JNICALL Java_org_apache_hadoop_hbase_ipc_RdmaNative_00024RdmaServerConnection_close(JNIEnv *env, jobject self) {
+    static const jclass jConnCls = env->FindClass("org/apache/hadoop/hbase/ipc/RdmaNative/RdmaServerConnection");
+    if (jConnCls == NULL)
+        REPORT_FATAL("Unable to find class org/apache/hadoop/hbase/ipc/RdmaNative/RdmaServerConnection.");
+    jfieldID jFieldCxxPtr = env->GetFieldID(jConnCls, "ptrCxxClass", "J");
+    if (jFieldCxxPtr == NULL)
+        REPORT_ERROR("Unable to getFieldId `ptrCxxClass`");
+    jlong cxxPtr = env->GetLongField(self, jFieldCxxPtr);
+    CRdmaServerConnectionInfo *pConn = (CRdmaServerConnectionInfo *)cxxPtr;
+    if (pConn == nullptr)
+        REPORT_ERROR("cxx conn ptr is nullptr. is the connection closed?");
 
     checkedDelete(pConn);
     return JNI_TRUE;
