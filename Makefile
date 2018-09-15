@@ -94,4 +94,4 @@ examples:
 ##################################################
 
 java:
-	$(CC) src/infinity/java-wrapper/RdmaNative.cc $(CC_FLAGS) -I src/ -I $(JAVA_HOME)/include -I $(JAVA_HOME)/include/linux -shared -fPIC -o $(RELEASE_FOLDER)/libRdmaNative.so
+	$(CC) src/infinity/java-wrapper/RdmaNative.cc src/infinity/java-wrapper/RdmaImpl.cc $(CC_FLAGS) -I src/ -I $(JAVA_HOME)/include -I $(JAVA_HOME)/include/linux -shared -fPIC -o $(RELEASE_FOLDER)/libRdmaNative.so
