@@ -67,7 +67,7 @@ all: library examples java java-test
 $(BUILD_FOLDER)/%.o: $(SOURCE_FILES) $(HEADER_FILES)
 	mkdir -p $(BUILD_FOLDER)
 	mkdir -p $(BUILD_DIRECTORIES)
-	$(CC) $(CC_FLAGS) -c $(SOURCE_FOLDER)/$*.cpp -I $(SOURCE_FOLDER) -o $(BUILD_FOLDER)/$*.o
+	$(CC) $(CC_FLAGS) -c $(SOURCE_FOLDER)/$*.cpp -I $(SOURCE_FOLDER) -fPIC -o $(BUILD_FOLDER)/$*.o
 
 ##################################################
 
