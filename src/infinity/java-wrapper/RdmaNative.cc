@@ -28,8 +28,8 @@ JNIEXPORT jboolean JNICALL Java_org_apache_hadoop_hbase_ipc_RdmaNative_rdmaInitG
  * Signature: ()V
  */
 JNIEXPORT void JNICALL Java_org_apache_hadoop_hbase_ipc_RdmaNative_rdmaDestroyGlobal(JNIEnv *, jclass) {
-    checkedDelete(context);
     checkedDelete(qpFactory);
+    checkedDelete(context);
 }
 
 /*

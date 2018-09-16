@@ -9,9 +9,9 @@ int main(int argc, char **argv) {
     bool isServer = true;
     int serverPort = 25543;
     string serverName;
+    Java_org_apache_hadoop_hbase_ipc_RdmaNative_rdmaInitGlobal(NULL, NULL);
     if(argc == 1) {
         cout << "server mode" << endl;
-        Java_org_apache_hadoop_hbase_ipc_RdmaNative_rdmaInitGlobal(NULL, NULL);
         Java_org_apache_hadoop_hbase_ipc_RdmaNative_rdmaBind(NULL, NULL, serverPort);
         CRdmaServerConnectionInfo conn;
         void *dataPtr;
@@ -37,12 +37,10 @@ int main(int argc, char **argv) {
         cout << "Sleeping 5 seconds to wait for the client reading response..." << endl;
         sleep(5); // the client is still reading thr response!
  
-        Java_org_apache_hadoop_hbase_ipc_RdmaNative_rdmaDestroyGlobal(NULL, NULL);
     }
     else {
         cout << "client mode" << endl;
         serverName = argv[1];
-        Java_org_apache_hadoop_hbase_ipc_RdmaNative_rdmaInitGlobal(NULL, NULL);
         CRdmaClientConnectionInfo conn;
         string queryData;
         infinity::memory::Buffer *bufPtr;
@@ -61,7 +59,6 @@ int main(int argc, char **argv) {
         while(!conn.isResponseReady()) sleep(1);
         conn.readResponse(bufPtr);
         cout << "response:" << (char *)bufPtr->getData() << endl;
-
-        Java_org_apache_hadoop_hbase_ipc_RdmaNative_rdmaDestroyGlobal(NULL, NULL);
     }
+    Java_org_apache_hadoop_hbase_ipc_RdmaNative_rdmaDestroyGlobal(NULL, NULL);
 }
