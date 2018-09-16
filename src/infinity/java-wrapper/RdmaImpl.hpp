@@ -167,6 +167,7 @@ class CRdmaClientConnectionInfo {
         requests::RequestToken reqToken(context);
         pQP->read(&serverMagicBuffer, pRemoteDynamicBufferTokenBufferToken, sizeof(magic_t), &reqToken);
         reqToken.waitUntilCompleted();
+        rdma_debug << "server magic get: " << *(magic_t *)serverMagicBuffer.getData() << std::endl;
         return *(magic_t *)serverMagicBuffer.getData();
     }
 
