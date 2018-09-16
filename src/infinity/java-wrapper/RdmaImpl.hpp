@@ -78,7 +78,7 @@ class CRdmaServerConnectionInfo {
 
     void initFixedLocalBuffer() {
         pDynamicBuffer = new memory::Buffer(context, currentSize);
-        pDynamicBufferToken = pDynamicBuffer->createRegionToken();
+        pDynamicBufferToken = pDynamicBuffer->createRegionTokenAt(&pServerStatus->dynamicBufferToken);
         pDynamicBufferTokenBuffer = new memory::Buffer(context, sizeof(ServerStatusType));
         pDynamicBufferTokenBufferToken = pDynamicBufferTokenBuffer->createRegionToken();
         pServerStatus->magic = MAGIC_CONNECTED;
