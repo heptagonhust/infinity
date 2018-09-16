@@ -16,12 +16,13 @@ int main(int argc, char **argv) {
         CRdmaServerConnectionInfo conn;
         void *dataPtr;
         uint64_t size;
+        string responseData;
 
         conn.waitAndAccept();
         while(!conn.isQueryReadable());
         conn.readQuery(dataPtr, size);
         cout << "query:" << (char *)dataPtr << endl;
-        string responseData = "fuck";
+        responseData = "fuck";
         conn.writeResponse(responseData.data(), responseData.size());
         cout << "Sleeping 5 seconds to wait for the client reading response..." << endl;
         sleep(5); // the client is still reading thr response!
@@ -32,7 +33,7 @@ int main(int argc, char **argv) {
         while(!conn.isQueryReadable());
         conn.readQuery(dataPtr, size);
         cout << "query:" << (char *)dataPtr << endl;
-        string responseData = "FFFFFFFFFFFFFFucking!!!";
+        responseData = "FFFFFFFFFFFFFFucking!!!";
         conn.writeResponse(responseData.data(), responseData.size());
         cout << "Sleeping 5 seconds to wait for the client reading response..." << endl;
  
@@ -43,8 +44,10 @@ int main(int argc, char **argv) {
         serverName = argv[1];
         Java_org_apache_hadoop_hbase_ipc_RdmaNative_rdmaInitGlobal(NULL, NULL);
         CRdmaClientConnectionInfo conn;
+        string queryData;
+
         conn.connectToRemote(serverName.c_str(), serverPort);
-        string queryData = "hello";
+        queryData = "hello";
         conn.writeQuery((void *)queryData.data(), queryData.size());
         while(!conn.isResponseReady());
         infinity::memory::Buffer *bufPtr;
@@ -53,7 +56,15 @@ int main(int argc, char **argv) {
 
         cout << "---- Test the second round! ----" << endl;
 
-        
+        conn.connectToRemote(serverName.c_str(), serverPort);
+        queryData = "hello again";
+        conn.writeQuery((void *)queryData.data(), queryData.size());
+        while(!conn.isResponseReady());
+        infinity::memory::Buffer *bufPtr;
+        conn.readResponse(bufPtr);
+        cout << "response:" << (char *)bufPtr->getData() << endl;
+
+       
         Java_org_apache_hadoop_hbase_ipc_RdmaNative_rdmaDestroyGlobal(NULL, NULL);
     }
 }
