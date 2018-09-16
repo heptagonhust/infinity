@@ -73,27 +73,25 @@ class CRdmaServerConnectionInfo {
 #define pServerStatus ((ServerStatusType *)pDynamicBufferTokenBuffer->getData())
 
     memory::Buffer *pDynamicBuffer;           // must delete
-    memory::RegionToken *pDynamicBufferToken; // must delete
     uint64_t currentSize;                        // Default 4K
 
     void initFixedLocalBuffer() {
         pDynamicBufferTokenBuffer = new memory::Buffer(context, sizeof(ServerStatusType));
         pDynamicBufferTokenBufferToken = pDynamicBufferTokenBuffer->createRegionToken();
         pDynamicBuffer = new memory::Buffer(context, currentSize);
-        pDynamicBufferToken = pDynamicBuffer->createRegionTokenAt(&pServerStatus->dynamicBufferToken);
+        pDynamicBuffer->createRegionTokenAt(&pServerStatus->dynamicBufferToken);
         pServerStatus->magic = MAGIC_CONNECTED;
         pServerStatus->currentQueryLength = 0;
     }
 
 public:
-    CRdmaServerConnectionInfo() : pQP(nullptr), pDynamicBuffer(nullptr), pDynamicBufferToken(nullptr),
+    CRdmaServerConnectionInfo() : pQP(nullptr), pDynamicBuffer(nullptr), 
     pDynamicBufferTokenBuffer(nullptr), pDynamicBufferTokenBufferToken(nullptr), currentSize(4096) {
 
     }
     ~CRdmaServerConnectionInfo() {
         checkedDelete(pQP);
         checkedDelete(pDynamicBuffer);
-        checkedDelete(pDynamicBufferToken);
         checkedDelete(pDynamicBufferTokenBuffer);
     }
 
@@ -114,8 +112,7 @@ public:
 
             if (queryLength > currentSize) {
                 pDynamicBuffer->resize(queryLength);
-                checkedDelete(pDynamicBufferToken);
-                pDynamicBufferToken = pDynamicBuffer->createRegionTokenAt(&pServerStatus->dynamicBufferToken);
+                pDynamicBuffer->createRegionTokenAt(&pServerStatus->dynamicBufferToken);
             }
             pServerStatus->magic == MAGIC_SERVER_BUFFER_READY;
         }
@@ -137,6 +134,7 @@ public:
         pDynamicBuffer->resize(dataSize);
         // TODO: here's an extra copy. use dataPtr directly and jni global reference to avoid it!
         std::memcpy(pDynamicBuffer->getData(), dataPtr, dataSize);
+        pDynamicBuffer->createRegionTokenAt(&pServerStatus->dynamicBufferToken);
 
         if (pServerStatus->magic != MAGIC_QUERY_WROTE)
             throw std::runtime_error("write response: magic is changed while copying memory data.");
