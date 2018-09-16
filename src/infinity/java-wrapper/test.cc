@@ -62,7 +62,6 @@ int main(int argc, char **argv) {
         conn.readResponse(bufPtr);
         cout << "response:" << (char *)bufPtr->getData() << endl;
 
-       
         Java_org_apache_hadoop_hbase_ipc_RdmaNative_rdmaDestroyGlobal(NULL, NULL);
     }
 }
