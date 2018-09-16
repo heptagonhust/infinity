@@ -58,7 +58,7 @@ int main(int argc, char **argv) {
 
         queryData = "hello again";
         conn.writeQuery((void *)queryData.data(), queryData.size());
-        while(!conn.isResponseReady());
+        while(!conn.isResponseReady()) sleep(1);
         conn.readResponse(bufPtr);
         cout << "response:" << (char *)bufPtr->getData() << endl;
 
