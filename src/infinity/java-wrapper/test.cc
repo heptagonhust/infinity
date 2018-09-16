@@ -1,6 +1,7 @@
 #include "RdmaImpl.hpp"
 #include <iostream>
 #include <string>
+#include <unistd.h>
 #include "org_apache_hadoop_hbase_ipc_RdmaNative.h"
 
 using namespace std;
@@ -21,6 +22,7 @@ int main(int argc, char **argv) {
         cout << "query:" << (char *)dataPtr << endl;
         string responseData = "fuck";
         conn.writeResponse(responseData.data(), responseData.size());
+        sleep(5); // the client is still reading thr response!
     }
     else {
         cout << "client mode" << endl;
