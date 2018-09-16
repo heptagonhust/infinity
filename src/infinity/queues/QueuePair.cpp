@@ -12,6 +12,8 @@
 #include <string.h>
 #include <arpa/inet.h>
 #include <cerrno>
+#include <stdint.h>
+
 
 #include <infinity/core/Configuration.h>
 #include <infinity/utils/Debug.h>
