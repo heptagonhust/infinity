@@ -13,7 +13,7 @@ extern "C" {
  * Signature: ()Z
  */
 JNIEXPORT jboolean JNICALL Java_org_apache_hadoop_hbase_ipc_RdmaNative_rdmaInitGlobal
-  (JNIEnv *, jclass);
+  (JNIEnv *, jobject);
 
 /*
  * Class:     org_apache_hadoop_hbase_ipc_RdmaNative
@@ -21,7 +21,7 @@ JNIEXPORT jboolean JNICALL Java_org_apache_hadoop_hbase_ipc_RdmaNative_rdmaInitG
  * Signature: ()V
  */
 JNIEXPORT void JNICALL Java_org_apache_hadoop_hbase_ipc_RdmaNative_rdmaDestroyGlobal
-  (JNIEnv *, jclass);
+  (JNIEnv *, jobject);
 
 /*
  * Class:     org_apache_hadoop_hbase_ipc_RdmaNative
@@ -29,7 +29,7 @@ JNIEXPORT void JNICALL Java_org_apache_hadoop_hbase_ipc_RdmaNative_rdmaDestroyGl
  * Signature: (Ljava/lang/String;I)Lorg/apache/hadoop/hbase/ipc/RdmaNative/RdmaClientConnection;
  */
 JNIEXPORT jobject JNICALL Java_org_apache_hadoop_hbase_ipc_RdmaNative_rdmaConnect
-  (JNIEnv *, jclass, jstring, jint);
+  (JNIEnv *, jobject, jstring, jint);
 
 /*
  * Class:     org_apache_hadoop_hbase_ipc_RdmaNative
@@ -37,7 +37,7 @@ JNIEXPORT jobject JNICALL Java_org_apache_hadoop_hbase_ipc_RdmaNative_rdmaConnec
  * Signature: (I)Z
  */
 JNIEXPORT jboolean JNICALL Java_org_apache_hadoop_hbase_ipc_RdmaNative_rdmaBind
-  (JNIEnv *, jclass, jint);
+  (JNIEnv *, jobject, jint);
 
 /*
  * Class:     org_apache_hadoop_hbase_ipc_RdmaNative
@@ -45,7 +45,7 @@ JNIEXPORT jboolean JNICALL Java_org_apache_hadoop_hbase_ipc_RdmaNative_rdmaBind
  * Signature: ()Lorg/apache/hadoop/hbase/ipc/RdmaNative/RdmaServerConnection;
  */
 JNIEXPORT jobject JNICALL Java_org_apache_hadoop_hbase_ipc_RdmaNative_rdmaBlockedAccept
-  (JNIEnv *, jclass);
+  (JNIEnv *, jobject);
 
 #ifdef __cplusplus
 }

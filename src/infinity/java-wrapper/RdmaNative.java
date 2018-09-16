@@ -7,16 +7,16 @@ import java.nio.ByteBuffer;
 public class RdmaNative {
     // This function must be called exactly once to construct necessary structs.
     // It will construct rdmaContext and other global var.
-    public static native boolean rdmaInitGlobal();
+    public native boolean rdmaInitGlobal();
     // This function must be called exactly once to destruct global structs.
-    public static native void rdmaDestroyGlobal();
+    public native void rdmaDestroyGlobal();
 
     // Connect to remote host. Blocked operation. If success, returnedConn.errorCode holds 0.
-    public static native RdmaClientConnection rdmaConnect(String addr, int port);
+    public native RdmaClientConnection rdmaConnect(String addr, int port);
     // This function must be called once by server, to bind a port.
-    public static native boolean rdmaBind(int port);
+    public native boolean rdmaBind(int port);
     // Wait and accept a connection. Blocked operation. If success, returnedConn.errorCode holds 0.
-    public static native RdmaServerConnection rdmaBlockedAccept();
+    public native RdmaServerConnection rdmaBlockedAccept();
 
     public class RdmaClientConnection {
         private long ptrCxxClass;
