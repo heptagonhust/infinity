@@ -123,8 +123,7 @@ public:
 
     void readQuery(void *&dataPtr, uint64_t &dataSize) {
         if (pServerStatus->magic != MAGIC_QUERY_WROTE)
-            throw std::runtime_error(std::string("read query: wrong magic. Want 0xaaaaaaaa, got ") +
-                                     std::to_string(pServerStatus->magic));
+            throw std::runtime_error("Query is not readable while calling readQuery");
         dataPtr = pDynamicBuffer->getData();
         dataSize = pDynamicBuffer->getSizeInBytes();
     }
