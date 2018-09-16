@@ -151,6 +151,14 @@ class CRdmaClientConnectionInfo {
     memory::RegionToken *pRemoteDynamicBufferTokenBufferToken; // must not delete
     uint64_t lastResponseSize; // If this query is smaller than last, do not wait for the server to allocate space.
 
+    void rdmaSetServerCurrentQueryLength(uint64_t queryLength) {
+        // write the magic to MAGIC_QUERY_WROTE
+        requests::RequestToken reqToken(context);
+        memory::Buffer queryLenBuffer(context, sizeof(uint64_t));
+        *(uint64_t *)queryLenBuffer.getData() = queryLength;
+        pQP->write(&queryLenBuffer, 0,pRemoteDynamicBufferTokenBufferToken, offsetof(ServerStatusType, currentQueryLength),sizeof(uint64_t), queues::OperationFlags(), &reqToken);
+        reqToken.waitUntilCompleted();
+    }
     void rdmaSetServerMagic(magic_t magic) {
         // write the magic to MAGIC_QUERY_WROTE
         requests::RequestToken reqToken(context);
@@ -233,6 +241,7 @@ class CRdmaClientConnectionInfo {
         pQP->read(pResponseData, &remoteDynamicBufferToken, &reqToken);
 
         // Set the server status to initial status after used!
+        rdmaSetServerCurrentQueryLength(0);
         rdmaSetServerMagic(MAGIC_CONNECTED);
 
         pResponseDataBuf = pResponseData;
