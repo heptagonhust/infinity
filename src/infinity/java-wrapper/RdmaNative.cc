@@ -45,16 +45,12 @@ JNIEXPORT jobject JNICALL Java_org_apache_hadoop_hbase_ipc_RdmaNative_rdmaConnec
         abort();                                                                                                               \
     } while (0)
 
-    jclass jTestCls = env->FindClass("org/apache/hadoop/hbase/ipc/RdmaNative");
-    if (jTestCls == NULL)
-        REPORT_FATAL("DEBUG:Unable to find class org/apache/hadoop/hbase/ipc/RdmaNative.");
     jclass jConnCls = env->FindClass("org/apache/hadoop/hbase/ipc/RdmaNative$RdmaClientConnection");
     if (jConnCls == NULL)
         REPORT_FATAL("Unable to find class org/apache/hadoop/hbase/ipc/RdmaNative$RdmaClientConnection.");
- 
-    jmethodID jConnClsInit = env->GetMethodID(jConnCls, "<init>", "(LRdmaNative;)V");
+    jmethodID jConnClsInit = env->GetMethodID(jConnCls, "<init>", "(Lorg/apache/hadoop/hbase/ipc/RdmaNative;)V");
     if (jConnClsInit == NULL)
-        REPORT_FATAL("Unable to find constructor org/apache/hadoop/hbase/ipc/RdmaNative$RdmaClientConnection::<init> -> ()V.");
+        REPORT_FATAL("Unable to find constructor org/apache/hadoop/hbase/ipc/RdmaNative$RdmaClientConnection::<init> -> (org/apache/hadoop/hbase/ipc/RdmaNative;)V.");
     jobject jConn = env->NewObject(jConnCls, jConnClsInit, self);
     if (jConn == NULL)
         REPORT_FATAL("Unable to create RdmaClientConnection object.");
@@ -114,16 +110,12 @@ JNIEXPORT jboolean JNICALL Java_org_apache_hadoop_hbase_ipc_RdmaNative_rdmaBind(
  * Signature: (I)Lorg/apache/hadoop/hbase/ipc/RdmaNative$RdmaServerConnection;
  */
 JNIEXPORT jobject JNICALL Java_org_apache_hadoop_hbase_ipc_RdmaNative_rdmaBlockedAccept(JNIEnv *env, jobject self) {
-    jclass jTestCls = env->FindClass("org/apache/hadoop/hbase/ipc/RdmaNative");
-    if (jTestCls == NULL)
-        REPORT_FATAL("DEBUG:Unable to find class org/apache/hadoop/hbase/ipc/RdmaNative.");
-    rdma_debug << "called" << std::endl;
     jclass jConnCls = env->FindClass("org/apache/hadoop/hbase/ipc/RdmaNative$RdmaServerConnection");
     if (jConnCls == NULL)
         REPORT_FATAL("Unable to find class org/apache/hadoop/hbase/ipc/RdmaNative$RdmaServerConnection.");
-    jmethodID jConnClsInit = env->GetMethodID(jConnCls, "<init>", "(LRdmaNative;)V");
+    jmethodID jConnClsInit = env->GetMethodID(jConnCls, "<init>", "(Lorg/apache/hadoop/hbase/ipc/RdmaNative;)V");
     if (jConnClsInit == NULL)
-        REPORT_FATAL("Unable to find constructor org/apache/hadoop/hbase/ipc/RdmaNative$RdmaServerConnection::<init> -> ()V.");
+        REPORT_FATAL("Unable to find constructor org/apache/hadoop/hbase/ipc/RdmaNative$RdmaServerConnection::<init> -> (org/apache/hadoop/hbase/ipc/RdmaNative;)V.");
     jobject jConn = env->NewObject(jConnCls, jConnClsInit, self);
     if (jConn == NULL)
         REPORT_FATAL("Unable to create RdmaServerConnection object.");
