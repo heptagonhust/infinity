@@ -41,7 +41,7 @@ JNIEXPORT jobject JNICALL Java_org_apache_hadoop_hbase_ipc_RdmaNative_rdmaConnec
                                                                                   jint jServerPort) {
 #define REPORT_FATAL(msg)                                                                                                      \
     do {                                                                                                                       \
-        std::cerr << "RdmaNative FATAL: " << msg << "Unable to pass error to Java. Have to abort..." << std::endl;             \
+        std::cerr << "RdmaNative FATAL: " __FILE__ ":" << __LINE__ << msg << "Unable to pass error to Java. Have to abort..." << std::endl;             \
         abort();                                                                                                               \
     } while (0)
 
