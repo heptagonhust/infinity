@@ -45,12 +45,12 @@ int main(int argc, char **argv) {
         Java_org_apache_hadoop_hbase_ipc_RdmaNative_rdmaInitGlobal(NULL, NULL);
         CRdmaClientConnectionInfo conn;
         string queryData;
+        infinity::memory::Buffer *bufPtr;
 
         conn.connectToRemote(serverName.c_str(), serverPort);
         queryData = "hello";
         conn.writeQuery((void *)queryData.data(), queryData.size());
         while(!conn.isResponseReady());
-        infinity::memory::Buffer *bufPtr;
         conn.readResponse(bufPtr);
         cout << "response:" << (char *)bufPtr->getData() << endl;
 
@@ -60,7 +60,6 @@ int main(int argc, char **argv) {
         queryData = "hello again";
         conn.writeQuery((void *)queryData.data(), queryData.size());
         while(!conn.isResponseReady());
-        infinity::memory::Buffer *bufPtr;
         conn.readResponse(bufPtr);
         cout << "response:" << (char *)bufPtr->getData() << endl;
 
