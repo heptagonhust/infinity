@@ -111,6 +111,7 @@ public:
                 goto broken_value_read_again;
 
             if (queryLength > currentSize) {
+                rdma_debug << "allocating new buffer rather than reusing old one..." << std::endl;
                 pDynamicBuffer->resize(queryLength);
                 pDynamicBuffer->createRegionTokenAt(&pServerStatus->dynamicBufferToken);
             }
@@ -201,6 +202,7 @@ class CRdmaClientConnectionInfo {
 
         // Wait for the server allocating buffer...
         if (dataSize > lastResponseSize) {
+            rdma_debug << "server is allocating new buffer rather than reusing old one..." << std::endl;
             while (true) {
                 static_assert(offsetof(ServerStatusType, magic) == 0, "Use read with more arg if offsetof(magic) is not 0.");
                 if (MAGIC_SERVER_BUFFER_READY == rdmaGetServerMagic())
