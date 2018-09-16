@@ -114,6 +114,7 @@ public:
                 rdma_debug << "allocating new buffer rather than reusing old one..." << std::endl;
                 pDynamicBuffer->resize(queryLength);
                 pDynamicBuffer->createRegionTokenAt(&pServerStatus->dynamicBufferToken);
+                currentSize = queryLength;
             }
             pServerStatus->magic == MAGIC_SERVER_BUFFER_READY;
         }
@@ -132,10 +133,13 @@ public:
         if (pServerStatus->magic != MAGIC_QUERY_WROTE)
             throw std::runtime_error(std::string("write response: wrong magic. Want 0xaaaaaaaa, got ") +
                                      std::to_string(pServerStatus->magic));
-        pDynamicBuffer->resize(dataSize);
+        if(dataSize > currentSize) {
+            pDynamicBuffer->resize(dataSize);
+            pDynamicBuffer->createRegionTokenAt(&pServerStatus->dynamicBufferToken);
+            currentSize = dataSize;
+        }
         // TODO: here's an extra copy. use dataPtr directly and jni global reference to avoid it!
         std::memcpy(pDynamicBuffer->getData(), dataPtr, dataSize);
-        pDynamicBuffer->createRegionTokenAt(&pServerStatus->dynamicBufferToken);
 
         if (pServerStatus->magic != MAGIC_QUERY_WROTE)
             throw std::runtime_error("write response: magic is changed while copying memory data.");
@@ -149,14 +153,14 @@ public:
 class CRdmaClientConnectionInfo {
     queues::QueuePair *pQP;                                    // must delete
     memory::RegionToken *pRemoteDynamicBufferTokenBufferToken; // must not delete
-    uint64_t lastResponseSize; // If this query is smaller than last, do not wait for the server to allocate space.
+    uint64_t remoteBufferCurrentSize; // If this query is smaller than last, do not wait for the server to allocate space.
 
     void rdmaSetServerCurrentQueryLength(uint64_t queryLength) {
         // write the magic to MAGIC_QUERY_WROTE
         requests::RequestToken reqToken(context);
         memory::Buffer queryLenBuffer(context, sizeof(uint64_t));
         *(uint64_t *)queryLenBuffer.getData() = queryLength;
-        pQP->write(&queryLenBuffer, 0,pRemoteDynamicBufferTokenBufferToken, offsetof(ServerStatusType, currentQueryLength),sizeof(uint64_t), queues::OperationFlags(), &reqToken);
+        pQP->write(&queryLenBuffer, 0, pRemoteDynamicBufferTokenBufferToken, offsetof(ServerStatusType, currentQueryLength),sizeof(uint64_t), queues::OperationFlags(), &reqToken);
         reqToken.waitUntilCompleted();
     }
     void rdmaSetServerMagic(magic_t magic) {
@@ -182,7 +186,7 @@ class CRdmaClientConnectionInfo {
 
   public:
     CRdmaClientConnectionInfo() : pQP(nullptr), pRemoteDynamicBufferTokenBufferToken(nullptr),
-    lastResponseSize(4096) {
+    remoteBufferCurrentSize(4096) {
 
     }
     ~CRdmaClientConnectionInfo() { checkedDelete(pQP); }
@@ -209,13 +213,14 @@ class CRdmaClientConnectionInfo {
         reqToken.waitUntilCompleted();
 
         // Wait for the server allocating buffer...
-        if (dataSize > lastResponseSize) {
+        if (dataSize > remoteBufferCurrentSize) {
             rdma_debug << "server is allocating new buffer rather than reusing old one..." << std::endl;
             while (true) {
                 static_assert(offsetof(ServerStatusType, magic) == 0, "Use read with more arg if offsetof(magic) is not 0.");
                 if (MAGIC_SERVER_BUFFER_READY == rdmaGetServerMagic())
                     break; // Remote buffer is ready. Fire!
             }
+            remoteBufferCurrentSize = dataSize;
         }
         // write the real data
         memory::Buffer tempTokenBuffer(context, sizeof(ServerStatusType));
@@ -245,7 +250,9 @@ class CRdmaClientConnectionInfo {
         rdmaSetServerMagic(MAGIC_CONNECTED);
 
         pResponseDataBuf = pResponseData;
-        lastResponseSize = pResponseData->getSizeInBytes();
+        if(pResponseData->getSizeInBytes() > remoteBufferCurrentSize) {
+            remoteBufferCurrentSize = pResponseData->getSizeInBytes();
+        }
         // WARNING: You must delete the pResponseDataBuf after using it!!!
     }
 };
