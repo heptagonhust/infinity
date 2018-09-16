@@ -17,8 +17,8 @@ int main(int argc, char **argv) {
         void *dataPtr;
         uint64_t size;
         string responseData;
-
         conn.waitAndAccept();
+
         while(!conn.isQueryReadable());
         conn.readQuery(dataPtr, size);
         cout << "query:" << (char *)dataPtr << endl;
@@ -29,13 +29,13 @@ int main(int argc, char **argv) {
 
         cout << "---- Test the second round! ----" << endl;
 
-        conn.waitAndAccept();
         while(!conn.isQueryReadable());
         conn.readQuery(dataPtr, size);
         cout << "query:" << (char *)dataPtr << endl;
         responseData = "FFFFFFFFFFFFFFucking!!!";
         conn.writeResponse(responseData.data(), responseData.size());
         cout << "Sleeping 5 seconds to wait for the client reading response..." << endl;
+        sleep(5); // the client is still reading thr response!
  
         Java_org_apache_hadoop_hbase_ipc_RdmaNative_rdmaDestroyGlobal(NULL, NULL);
     }
@@ -46,8 +46,8 @@ int main(int argc, char **argv) {
         CRdmaClientConnectionInfo conn;
         string queryData;
         infinity::memory::Buffer *bufPtr;
-
         conn.connectToRemote(serverName.c_str(), serverPort);
+
         queryData = "hello";
         conn.writeQuery((void *)queryData.data(), queryData.size());
         while(!conn.isResponseReady());
@@ -56,7 +56,6 @@ int main(int argc, char **argv) {
 
         cout << "---- Test the second round! ----" << endl;
 
-        conn.connectToRemote(serverName.c_str(), serverPort);
         queryData = "hello again";
         conn.writeQuery((void *)queryData.data(), queryData.size());
         while(!conn.isResponseReady());
