@@ -117,6 +117,7 @@ JNIEXPORT jobject JNICALL Java_org_apache_hadoop_hbase_ipc_RdmaNative_rdmaBlocke
     jclass jTestCls = env->FindClass("org/apache/hadoop/hbase/ipc/RdmaNative");
     if (jTestCls == NULL)
         REPORT_FATAL("DEBUG:Unable to find class org/apache/hadoop/hbase/ipc/RdmaNative.");
+    rdma_debug << "called" << std::endl;
     jclass jConnCls = env->FindClass("org/apache/hadoop/hbase/ipc/RdmaNative/RdmaServerConnection");
     if (jConnCls == NULL)
         REPORT_FATAL("Unable to find class org/apache/hadoop/hbase/ipc/RdmaNative/RdmaServerConnection.");
