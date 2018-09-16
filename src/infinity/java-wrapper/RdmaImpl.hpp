@@ -77,10 +77,10 @@ class CRdmaServerConnectionInfo {
     uint64_t currentSize;                        // Default 4K
 
     void initFixedLocalBuffer() {
-        pDynamicBuffer = new memory::Buffer(context, currentSize);
-        pDynamicBufferToken = pDynamicBuffer->createRegionTokenAt(&pServerStatus->dynamicBufferToken);
         pDynamicBufferTokenBuffer = new memory::Buffer(context, sizeof(ServerStatusType));
         pDynamicBufferTokenBufferToken = pDynamicBufferTokenBuffer->createRegionToken();
+        pDynamicBuffer = new memory::Buffer(context, currentSize);
+        pDynamicBufferToken = pDynamicBuffer->createRegionTokenAt(&pServerStatus->dynamicBufferToken);
         pServerStatus->magic = MAGIC_CONNECTED;
         pServerStatus->currentQueryLength = 0;
     }
