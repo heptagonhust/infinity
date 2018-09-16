@@ -22,7 +22,7 @@ int main(int argc, char **argv) {
         while(!conn.isQueryReadable());
         conn.readQuery(dataPtr, size);
         cout << "query:" << (char *)dataPtr << endl;
-        responseData = "fuck";
+        responseData = "fuckFirstPkg";
         conn.writeResponse(responseData.data(), responseData.size());
         cout << "Sleeping 5 seconds to wait for the client reading response..." << endl;
         sleep(5); // the client is still reading thr response!
