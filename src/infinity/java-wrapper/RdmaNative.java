@@ -7,16 +7,16 @@ import java.nio.ByteBuffer;
 public class RdmaNative {
     // This function must be called exactly once to construct necessary structs.
     // It will construct rdmaContext and other global var.
-    public native boolean rdmaInitGlobal();
+    public static native boolean rdmaInitGlobal();
     // This function must be called exactly once to destruct global structs.
-    public native void rdmaDestroyGlobal();
+    public static native void rdmaDestroyGlobal();
 
     // Connect to remote host. Blocked operation. If success, returnedConn.errorCode holds 0.
-    public native RdmaClientConnection rdmaConnect(String addr, int port);
+    public static native RdmaClientConnection rdmaConnect(String addr, int port);
     // This function must be called once by server, to bind a port.
-    public native boolean rdmaBind(int port);
+    public static native boolean rdmaBind(int port);
     // Wait and accept a connection. Blocked operation. If success, returnedConn.errorCode holds 0.
-    public native RdmaServerConnection rdmaBlockedAccept();
+    public static native RdmaServerConnection rdmaBlockedAccept();
 
     public class RdmaClientConnection {
         private long ptrCxxClass;
@@ -42,12 +42,13 @@ public class RdmaNative {
             On accepting connection, the server creates a 4K DynamicBuffer, and register it, put the token into DynamicBufferTokenBuffer.
         begin:
             DynamicBufferTokenBuffer has 3 area: magic, currentQuerySize, and DynamicBufferToken.
-            Then the server send the DynamicBufferTokenBufferToken to client as userData. The client send its query size as userData.
+            Then the server send the DynamicBufferTokenBufferToken to client as userData. Then the client write its querySize into 
+            DynamicBufferTokenBuffer. On server calling isQueryReadable(), it allocates the buffer if querySize available.
             If the client's query size is less than current DynamicBufferSize, it just write it in the existing dynamic buffer. 
             If the query is larger, the client must read DynamicBufferTokenBuffer again and again, until the Magic is NOT 0x00000000. 
             Then write the query in.
             If the query is larger, the server must resize and re-register the DynamicBuffer, put its new token into 
-            DynamicBufferTokenBuffer, and set the Magic to 0xffffffff atomically(will atomic CPU instruction works for rdma? It doesn't matter).
+            DynamicBufferTokenBuffer, and set the Magic to 0xffffffff.
             
             Once the query is wrote into server, the client must set Magic to 0xaaaaaaaa(use compareAndSwap, if possible. It doesn't matter).
             The server call isQueryReadable() to check if the Magic is 0xaaaaaaaa. 
