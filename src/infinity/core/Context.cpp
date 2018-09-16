@@ -180,6 +180,7 @@ bool Context::pollSendCompletionQueue() {
 			INFINITY_DEBUG("[INFINITY][CORE][CONTEXT] Request completed (id %lu).\n", wc.wr_id);
 		} else {
 			INFINITY_DEBUG("[INFINITY][CORE][CONTEXT] Request failed (id %lu).\n", wc.wr_id);
+            throw std::runtime_error("[INFINITY][CORE][CONTEXT] Request failed. read the log.");
 		}
 		return true;
 	}
