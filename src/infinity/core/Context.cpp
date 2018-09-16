@@ -79,24 +79,30 @@ Context::~Context() {
 	delete defaultRequestToken;
 	delete defaultAtomic;
 
-	// Destroy shared receive queue
-	int returnValue = ibv_destroy_srq(this->ibvSharedReceiveQueue);
-	INFINITY_ASSERT(returnValue == 0, "[INFINITY][CORE][CONTEXT] Could not delete shared receive queue. Check if there's unclosed QP!\n");
+    try {
+    	// Destroy shared receive queue
+    	int returnValue = ibv_destroy_srq(this->ibvSharedReceiveQueue);
+    	INFINITY_ASSERT(returnValue == 0, "[INFINITY][CORE][CONTEXT] Could not delete shared receive queue. Check if there's unclosed QP!\n");
 
-	// Destroy completion queues
-	returnValue = ibv_destroy_cq(this->ibvSendCompletionQueue);
-	INFINITY_ASSERT(returnValue == 0, "[INFINITY][CORE][CONTEXT] Could not delete send completion queue\n");
-	returnValue = ibv_destroy_cq(this->ibvReceiveCompletionQueue);
-	INFINITY_ASSERT(returnValue == 0, "[INFINITY][CORE][CONTEXT] Could not delete receive completion queue\n");
+    	// Destroy completion queues
+    	returnValue = ibv_destroy_cq(this->ibvSendCompletionQueue);
+    	INFINITY_ASSERT(returnValue == 0, "[INFINITY][CORE][CONTEXT] Could not delete send completion queue\n");
+    	returnValue = ibv_destroy_cq(this->ibvReceiveCompletionQueue);
+    	INFINITY_ASSERT(returnValue == 0, "[INFINITY][CORE][CONTEXT] Could not delete receive completion queue\n");
 
-	// Destroy protection domain
-	returnValue = ibv_dealloc_pd(this->ibvProtectionDomain);
-	INFINITY_ASSERT(returnValue == 0, "[INFINITY][CORE][CONTEXT] Could not delete protection domain\n");
-
-	// Close device
-	returnValue = ibv_close_device(this->ibvContext);
-	INFINITY_ASSERT(returnValue == 0, "[INFINITY][CORE][CONTEXT] Could not close device\n");
-
+    	// Destroy protection domain
+    	returnValue = ibv_dealloc_pd(this->ibvProtectionDomain);
+    	INFINITY_ASSERT(returnValue == 0, "[INFINITY][CORE][CONTEXT] Could not delete protection domain\n");
+    }
+    catch(...) {
+    	// Close device even if other operation failed.
+    	ibv_close_device(this->ibvContext);
+        throw;
+    }
+    // Close device
+ 	int returnValue = ibv_close_device(this->ibvContext);
+   	INFINITY_ASSERT(returnValue == 0, "[INFINITY][CORE][CONTEXT] Could not close device\n");
+ 
 }
 
 void Context::postReceiveBuffer(infinity::memory::Buffer* buffer) {
