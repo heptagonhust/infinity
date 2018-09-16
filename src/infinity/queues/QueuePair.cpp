@@ -13,7 +13,10 @@
 #include <arpa/inet.h>
 #include <cerrno>
 #include <stdint.h>
-
+#include "../java-wrapper/fuckhust.hpp"
+#if HUST
+#define UINT32_MAX 0xffffffff
+#endif
 
 #include <infinity/core/Configuration.h>
 #include <infinity/utils/Debug.h>
