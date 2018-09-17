@@ -48,7 +48,7 @@ int main(int argc, char **argv) {
             try {
                 conn.connectToRemote(serverName.c_str(), serverPort);
             }
-            catch(...) {sleep(1);}
+            catch(std::exception &e) {cout<<e.what()<<endl; sleep(1);}
         }
         cout << "connected" << endl;
         queryData = "hello";
