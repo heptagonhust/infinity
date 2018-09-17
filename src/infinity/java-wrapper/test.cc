@@ -50,6 +50,7 @@ int main(int argc, char **argv) {
             }
             catch(...) {sleep(1);}
         }
+        cout << "connected" << endl;
         queryData = "hello";
         conn.writeQuery((void *)queryData.data(), queryData.size());
         while(!conn.isResponseReady());
