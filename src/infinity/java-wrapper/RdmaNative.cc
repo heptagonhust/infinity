@@ -91,7 +91,7 @@ JNIEXPORT jobject JNICALL Java_org_apache_hadoop_hbase_ipc_RdmaNative_rdmaConnec
     if (isCopy == JNI_TRUE) {
         env->ReleaseStringUTFChars(jServerAddr, serverAddr);
     }
-    rdma_debug << "connected!" << std::endl;
+    rdma_debug << "connected! jConn is " << jConn << std::endl;
     return jConn;
 }
 
