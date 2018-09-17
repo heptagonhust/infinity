@@ -44,8 +44,12 @@ int main(int argc, char **argv) {
         CRdmaClientConnectionInfo conn;
         string queryData;
         infinity::memory::Buffer *bufPtr;
-        conn.connectToRemote(serverName.c_str(), serverPort);
-
+        while(true) {
+            try {
+                conn.connectToRemote(serverName.c_str(), serverPort);
+            }
+            catch(...) {sleep(1);}
+        }
         queryData = "hello";
         conn.writeQuery((void *)queryData.data(), queryData.size());
         while(!conn.isResponseReady());
