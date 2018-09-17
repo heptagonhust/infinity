@@ -45,6 +45,8 @@ JNIEXPORT jobject JNICALL Java_org_apache_hadoop_hbase_ipc_RdmaNative_rdmaConnec
         abort();                                                                                                               \
     } while (0)
 
+    rdma_debug << "rdmaConnect called, server port " << jServerPort << std::endl;
+
     jclass jConnCls = env->FindClass("org/apache/hadoop/hbase/ipc/RdmaNative$RdmaClientConnection");
     if (jConnCls == NULL)
         REPORT_FATAL("Unable to find class org/apache/hadoop/hbase/ipc/RdmaNative$RdmaClientConnection.");
@@ -69,6 +71,8 @@ JNIEXPORT jobject JNICALL Java_org_apache_hadoop_hbase_ipc_RdmaNative_rdmaConnec
     if (serverAddr == NULL)
         REPORT_ERROR(3, "GetStringUTFChars from jServerAddr error.");
 
+    rdma_debug << "server addr:" << serverAddr << std::endl;
+
     // do connect
     try {
         CRdmaClientConnectionInfo *pConn = new CRdmaClientConnectionInfo();
@@ -87,6 +91,7 @@ JNIEXPORT jobject JNICALL Java_org_apache_hadoop_hbase_ipc_RdmaNative_rdmaConnec
     if (isCopy == JNI_TRUE) {
         env->ReleaseStringUTFChars(jServerAddr, serverAddr);
     }
+    rdma_debug << "connected!" << endl;
     return jConn;
 }
 
@@ -96,6 +101,7 @@ JNIEXPORT jobject JNICALL Java_org_apache_hadoop_hbase_ipc_RdmaNative_rdmaConnec
  * Signature: (I)Z
  */
 JNIEXPORT jboolean JNICALL Java_org_apache_hadoop_hbase_ipc_RdmaNative_rdmaBind(JNIEnv *, jobject, jint jListenPort) {
+    rdma_debug << "Binding port " << jListenPort << std::endl;
     try {
         qpFactory->bindToPort(jListenPort);
     } catch (std::exception &e) {
@@ -110,6 +116,7 @@ JNIEXPORT jboolean JNICALL Java_org_apache_hadoop_hbase_ipc_RdmaNative_rdmaBind(
  * Signature: (I)Lorg/apache/hadoop/hbase/ipc/RdmaNative$RdmaServerConnection;
  */
 JNIEXPORT jobject JNICALL Java_org_apache_hadoop_hbase_ipc_RdmaNative_rdmaBlockedAccept(JNIEnv *env, jobject self) {
+    rdma_debug << "accepting..." << std::endl;
     jclass jConnCls = env->FindClass("org/apache/hadoop/hbase/ipc/RdmaNative$RdmaServerConnection");
     if (jConnCls == NULL)
         REPORT_FATAL("Unable to find class org/apache/hadoop/hbase/ipc/RdmaNative$RdmaServerConnection.");
@@ -135,6 +142,7 @@ JNIEXPORT jobject JNICALL Java_org_apache_hadoop_hbase_ipc_RdmaNative_rdmaBlocke
     } catch (std::exception &e) {
         REPORT_ERROR(4, e.what());
     }
+    rdma_debug << "Accepted!" << std::endl;
     return jConn;
 }
 
