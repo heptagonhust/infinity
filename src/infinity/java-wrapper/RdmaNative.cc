@@ -61,7 +61,7 @@ JNIEXPORT jobject JNICALL Java_org_apache_hadoop_hbase_ipc_RdmaNative_rdmaConnec
 #define REPORT_ERROR(code, msg)                                                                                                \
     do {                                                                                                                       \
         env->SetIntField(jConn, jFieldErrCode, code);                                                                          \
-        std::cerr << "RdmaNative ERROR: " << msg << "Returning error code to java..." << std::endl;                            \
+        std::cerr << "RdmaNative ERROR: " __FILE__ ":" << __LINE__ << msg << "Returning error code to java..." << std::endl;                            \
     } while (0)
 
     jboolean isCopy;
@@ -142,12 +142,12 @@ JNIEXPORT jobject JNICALL Java_org_apache_hadoop_hbase_ipc_RdmaNative_rdmaBlocke
 #undef REPORT_ERROR
 #define REPORT_ERROR(msg)                                                                                                      \
     do {                                                                                                                       \
-        std::cerr << "RdmaNative ERROR: " << msg << "Returning error code to java..." << std::endl;                            \
+        std::cerr << "RdmaNative ERROR: " __FILE__ ":" << __LINE__  << msg << "Returning error code to java..." << std::endl;                            \
         return JNI_FALSE;                                                                                                      \
     } while (0)
 #define REPORT_ERROR_B(msg)                                                                                                    \
     do {                                                                                                                       \
-        std::cerr << "RdmaNative ERROR: " << msg << "Returning error code to java..." << std::endl;                            \
+        std::cerr << "RdmaNative ERROR: " __FILE__ ":" << __LINE__  << msg << "Returning error code to java..." << std::endl;                            \
         return NULL;                                                                                                           \
     } while (0)
 
