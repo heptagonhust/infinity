@@ -44,12 +44,11 @@ int main(int argc, char **argv) {
         CRdmaClientConnectionInfo conn;
         string queryData;
         infinity::memory::Buffer *bufPtr;
-        while(true) {
+            _again:
             try {
                 conn.connectToRemote(serverName.c_str(), serverPort);
             }
-            catch(std::exception &e) {cout<<e.what()<<endl; sleep(1);}
-        }
+            catch(std::exception &e) {sleep(1);goto _again;}
         cout << "connected" << endl;
         queryData = "hello";
         conn.writeQuery((void *)queryData.data(), queryData.size());
