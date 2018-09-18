@@ -142,7 +142,7 @@ JNIEXPORT jobject JNICALL Java_org_apache_hadoop_hbase_ipc_RdmaNative_rdmaBlocke
     } catch (std::exception &e) {
         REPORT_ERROR(4, e.what());
     }
-    rdma_debug << "Accepted!" << std::endl;
+    rdma_debug << "Accepted! jconn is " << jConn << std::endl;
     return jConn;
 }
 
