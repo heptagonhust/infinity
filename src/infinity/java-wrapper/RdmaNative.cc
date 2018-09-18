@@ -10,6 +10,7 @@
  * Signature: ()Z
  */
 JNIEXPORT jboolean JNICALL Java_org_apache_hadoop_hbase_ipc_RdmaNative_rdmaInitGlobal(JNIEnv *, jobject) {
+    rdma_debug << "WWWWWWWWWWWARNING: Someone is creating rdmaGlobal" << std::endl;
     try {
         context = new core::Context();
         qpFactory = new queues::QueuePairFactory(context);
