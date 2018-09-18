@@ -19,6 +19,7 @@ int main(int argc, char **argv) {
         string responseData;
         conn.waitAndAccept();
 
+
         while(!conn.isQueryReadable());
         conn.readQuery(dataPtr, size);
         cout << "query:" << (char *)dataPtr << endl;
@@ -36,7 +37,18 @@ int main(int argc, char **argv) {
         conn.writeResponse(responseData.data(), responseData.size());
         cout << "Sleeping 5 seconds to wait for the client reading response..." << endl;
         sleep(5); // the client is still reading thr response!
- 
+
+        cout << "---- Test the third round! ----" << endl;
+        CRdmaServerConnectionInfo anotherConn;
+        anotherConn.waitAndAccept();
+
+        while(!anotherConn.isQueryReadable());
+        anotherConn.readQuery(dataPtr, size);
+        cout << "query:" << (char *)dataPtr << endl;
+        responseData = "Ml with you the 3rd time.";
+        anotherConn.writeResponse(responseData.data(), responseData.size());
+        cout << "Sleeping 5 seconds to wait for the client reading response..." << endl;
+        sleep(5); // the client is still reading thr response!
     }
     else {
         cout << "client mode" << endl;
@@ -44,12 +56,13 @@ int main(int argc, char **argv) {
         CRdmaClientConnectionInfo conn;
         string queryData;
         infinity::memory::Buffer *bufPtr;
-            _again:
-            try {
-                conn.connectToRemote(serverName.c_str(), serverPort);
-            }
-            catch(std::exception &e) {sleep(1);goto _again;}
-        cout << "connected" << endl;
+
+        _again:
+        try {
+            conn.connectToRemote(serverName.c_str(), serverPort);
+        }
+        catch(std::exception &e) {sleep(1);goto _again;}
+
         queryData = "hello";
         conn.writeQuery((void *)queryData.data(), queryData.size());
         while(!conn.isResponseReady());
@@ -62,6 +75,20 @@ int main(int argc, char **argv) {
         conn.writeQuery((void *)queryData.data(), queryData.size());
         while(!conn.isResponseReady()) sleep(1);
         conn.readResponse(bufPtr);
+        cout << "response:" << (char *)bufPtr->getData() << endl;
+
+        cout << "---- Test the third round! ----" << endl;
+        CRdmaClientConnectionInfo anotherConn;
+        _again2:
+        try {
+            anotherConn.connectToRemote(serverName.c_str(), serverPort);
+        }
+        catch(std::exception &e) {sleep(1);goto _again2;}
+
+        queryData = "hello third ~";
+        anotherConn.writeQuery((void *)queryData.data(), queryData.size());
+        while(!anotherConn.isResponseReady()) sleep(1);
+        anotherConn.readResponse(bufPtr);
         cout << "response:" << (char *)bufPtr->getData() << endl;
     }
     Java_org_apache_hadoop_hbase_ipc_RdmaNative_rdmaDestroyGlobal(NULL, NULL);
