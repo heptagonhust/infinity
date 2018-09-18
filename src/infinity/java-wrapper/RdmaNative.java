@@ -11,21 +11,17 @@ public class RdmaNative {
     // This function must be called exactly once to destruct global structs.
     public native void rdmaDestroyGlobal();
 
-    // Connect to remote host. Blocked operation. If success, returnedConn.errorCode holds 0.
+    // Connect to remote host. Blocked operation. If failed, return null.
     public native RdmaClientConnection rdmaConnect(String addr, int port);
     // This function must be called once by server, to bind a port.
     public native boolean rdmaBind(int port);
-    // Wait and accept a connection. Blocked operation. If success, returnedConn.errorCode holds 0.
+    // Wait and accept a connection. Blocked operation. If failed, return null.
     public native RdmaServerConnection rdmaBlockedAccept();
 
     public class RdmaClientConnection {
         private long ptrCxxClass;
-        private int errorCode;
 
         public native boolean isClosed();
-        public boolean isConnectSucceed() {
-            return errorCode == 0;
-        }
         // returned ByteBuffer MAY be invalidated on next readResponse(). (invalidated if the bytebuffer is created without copying data)
         // return null object if the read failed.
         public native ByteBuffer readResponse(); // blocked. Will wait for the server for response.
@@ -62,12 +58,8 @@ public class RdmaNative {
             buffer, goto begin;
         */
         private long ptrCxxClass;
-        private int errorCode;
 
         public native boolean isClosed();
-        public boolean isAcceptSucceed() {
-            return errorCode == 0;
-        }
         public native boolean isQueryReadable();
         // returned ByteBuffer MAY be invalidated on next readQuery()
         // return null object if the read failed.

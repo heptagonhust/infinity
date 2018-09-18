@@ -56,14 +56,11 @@ JNIEXPORT jobject JNICALL Java_org_apache_hadoop_hbase_ipc_RdmaNative_rdmaConnec
     jobject jConn = env->NewObject(jConnCls, jConnClsInit, self);
     if (jConn == NULL)
         REPORT_FATAL("Unable to create RdmaClientConnection object.");
-    jfieldID jFieldErrCode = env->GetFieldID(jConnCls, "errorCode", "I");
-    if (jFieldErrCode == NULL)
-        REPORT_FATAL("Unable to getFieldId `errorCode` of class RdmaClientConnection.");
 
 #define REPORT_ERROR(code, msg)                                                                                                \
     do {                                                                                                                       \
-        env->SetIntField(jConn, jFieldErrCode, code);                                                                          \
         std::cerr << "RdmaNative ERROR: " __FILE__ ":" << __LINE__ << msg << "Returning error code to java..." << std::endl;                            \
+        return NULL;
     } while (0)
 
     jboolean isCopy;
@@ -82,7 +79,6 @@ JNIEXPORT jobject JNICALL Java_org_apache_hadoop_hbase_ipc_RdmaNative_rdmaConnec
             REPORT_ERROR(5, "Unable to getFieldId `ptrCxxClass`");
         static_assert(sizeof(jlong) == sizeof(CRdmaClientConnectionInfo *), "jlong must have same size with C++ Pointer");
         env->SetLongField(jConn, jFieldCxxPtr, (jlong)pConn);
-        env->SetIntField(jConn, jFieldErrCode, 0);
     } catch (std::exception &e) {
         REPORT_ERROR(4, e.what());
     }
@@ -126,9 +122,6 @@ JNIEXPORT jobject JNICALL Java_org_apache_hadoop_hbase_ipc_RdmaNative_rdmaBlocke
     jobject jConn = env->NewObject(jConnCls, jConnClsInit, self);
     if (jConn == NULL)
         REPORT_FATAL("Unable to create RdmaServerConnection object.");
-    jfieldID jFieldErrCode = env->GetFieldID(jConnCls, "errorCode", "I");
-    if (jFieldErrCode == NULL)
-        REPORT_FATAL("Unable to getFieldId `errorCode` of class RdmaServerConnection.");
 
     try {
         CRdmaServerConnectionInfo *pConn = new CRdmaServerConnectionInfo();
@@ -138,9 +131,9 @@ JNIEXPORT jobject JNICALL Java_org_apache_hadoop_hbase_ipc_RdmaNative_rdmaBlocke
             REPORT_ERROR(5, "Unable to getFieldId `ptrCxxClass`");
         static_assert(sizeof(jlong) == sizeof(CRdmaClientConnectionInfo *), "jlong must have same size with C++ Pointer");
         env->SetLongField(jConn, jFieldCxxPtr, (jlong)pConn);
-        env->SetIntField(jConn, jFieldErrCode, 0);
     } catch (std::exception &e) {
         REPORT_ERROR(4, e.what());
+        return NULL;
     }
     rdma_debug << "Accepted! jconn is " << jConn << std::endl;
     return jConn;
