@@ -9,7 +9,7 @@
  * Method:    rdmaInitGlobal
  * Signature: ()Z
  */
-JNIEXPORT jboolean JNICALL Java_org_apache_hadoop_hbase_ipc_RdmaNative_rdmaInitGlobal(JNIEnv *, jobject) {
+JNIEXPORT jboolean JNICALL Java_org_apache_hadoop_hbase_ipc_RdmaNative_rdmaInitGlobal(JNIEnv *, jclass) {
     rdma_debug << "WWWWWWWWWWWARNING: Someone is creating rdmaGlobal" << std::endl;
     try {
         context = new core::Context();
@@ -28,7 +28,7 @@ JNIEXPORT jboolean JNICALL Java_org_apache_hadoop_hbase_ipc_RdmaNative_rdmaInitG
  * Method:    rdmaDestroyGlobal
  * Signature: ()V
  */
-JNIEXPORT void JNICALL Java_org_apache_hadoop_hbase_ipc_RdmaNative_rdmaDestroyGlobal(JNIEnv *, jobject) {
+JNIEXPORT void JNICALL Java_org_apache_hadoop_hbase_ipc_RdmaNative_rdmaDestroyGlobal(JNIEnv *, jclass) {
     rdma_debug << "WWWWWWWWWWWARNING: Someone is destroying rdmaGlobal" << std::endl;
     checkedDelete(qpFactory);
     checkedDelete(context);
@@ -106,7 +106,7 @@ JNIEXPORT jobject JNICALL Java_org_apache_hadoop_hbase_ipc_RdmaNative_rdmaConnec
  * Method:    rdmaBind
  * Signature: (I)Z
  */
-JNIEXPORT jboolean JNICALL Java_org_apache_hadoop_hbase_ipc_RdmaNative_rdmaBind(JNIEnv *, jobject, jint jListenPort) {
+JNIEXPORT jboolean JNICALL Java_org_apache_hadoop_hbase_ipc_RdmaNative_rdmaBind(JNIEnv *, jclass, jint jListenPort) {
     rdma_debug << "Binding port " << jListenPort << std::endl;
     try {
         qpFactory->bindToPort(jListenPort);
