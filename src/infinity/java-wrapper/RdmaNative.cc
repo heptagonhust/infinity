@@ -14,7 +14,7 @@ JNIEXPORT jboolean JNICALL Java_org_apache_hadoop_hbase_ipc_RdmaNative_rdmaInitG
         context = new core::Context();
         qpFactory = new queues::QueuePairFactory(context);
     } catch (std::exception &ex) {
-        rdma_error << "Exception: " << ex.what() << std::endl;
+        rdma_error << "Init Exception: " << ex.what() << std::endl;
         checkedDelete(context);
         checkedDelete(qpFactory);
         return JNI_FALSE;
@@ -28,6 +28,7 @@ JNIEXPORT jboolean JNICALL Java_org_apache_hadoop_hbase_ipc_RdmaNative_rdmaInitG
  * Signature: ()V
  */
 JNIEXPORT void JNICALL Java_org_apache_hadoop_hbase_ipc_RdmaNative_rdmaDestroyGlobal(JNIEnv *, jobject) {
+    rdma_debug << "WWWWWWWWWWWARNING: Someone is destroying rdmaGlobal" << std::endl;
     checkedDelete(qpFactory);
     checkedDelete(context);
 }
