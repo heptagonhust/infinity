@@ -11,6 +11,9 @@
  */
 JNIEXPORT jboolean JNICALL Java_org_apache_hadoop_hbase_ipc_RdmaNative_rdmaInitGlobal(JNIEnv *, jclass) {
     rdma_debug << "WWWWWWWWWWWARNING: Someone is creating rdmaGlobal" << std::endl;
+    if(context != nullptr) {
+        rdma_error << "You are init global but context is already inited" << std::endl;
+    }
     try {
         context = new core::Context();
         qpFactory = new queues::QueuePairFactory(context);
