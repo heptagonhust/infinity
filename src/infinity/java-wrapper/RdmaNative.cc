@@ -106,7 +106,7 @@ JNIEXPORT jobject JNICALL Java_org_apache_hadoop_hbase_ipc_RdmaNative_rdmaConnec
  * Method:    rdmaBind
  * Signature: (I)Z
  */
-JNIEXPORT jboolean JNICALL Java_org_apache_hadoop_hbase_ipc_RdmaNative_rdmaBind(JNIEnv *, jclass, jint jListenPort) {
+JNIEXPORT jboolean JNICALL Java_org_apache_hadoop_hbase_ipc_RdmaNative_rdmaBind(JNIEnv *, jobject, jint jListenPort) {
     rdma_debug << "Binding port " << jListenPort << std::endl;
     try {
         qpFactory->bindToPort(jListenPort);
