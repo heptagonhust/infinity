@@ -22,7 +22,7 @@ int main(int argc, char **argv) {
 
         while(!conn.isQueryReadable());
         conn.readQuery(dataPtr, size);
-        cout << "query:" << (char *)dataPtr << endl;
+        cout << "query:" << (char *)dataPtr << ", with length " << size << endl;
         responseData = "fuckFirstPkg";
         conn.writeResponse(responseData.data(), responseData.size());
         cout << "Sleeping 5 seconds to wait for the client reading response..." << endl;
@@ -32,7 +32,7 @@ int main(int argc, char **argv) {
 
         while(!conn.isQueryReadable());
         conn.readQuery(dataPtr, size);
-        cout << "query:" << (char *)dataPtr << endl;
+        cout << "query:" << (char *)dataPtr << ", with length " << size << endl;
         responseData = "FFFFFFFFFFFFFFucking!!!";
         conn.writeResponse(responseData.data(), responseData.size());
         cout << "Sleeping 5 seconds to wait for the client reading response..." << endl;
@@ -44,7 +44,7 @@ int main(int argc, char **argv) {
 
         while(!anotherConn.isQueryReadable());
         anotherConn.readQuery(dataPtr, size);
-        cout << "query:" << (char *)dataPtr << endl;
+        cout << "query:" << (char *)dataPtr << ", with length " << size << endl;
         responseData = "Ml with you the 3rd time.";
         anotherConn.writeResponse(responseData.data(), responseData.size());
         cout << "Sleeping 5 seconds to wait for the client reading response..." << endl;
@@ -67,7 +67,7 @@ int main(int argc, char **argv) {
         conn.writeQuery((void *)queryData.data(), queryData.size());
         while(!conn.isResponseReady());
         conn.readResponse(bufPtr);
-        cout << "response:" << (char *)bufPtr->getData() << endl;
+        cout << "response:" << (char *)bufPtr->getData() << ", with length " << bufPtr->getSizeInBytes() << endl;
 
         cout << "---- Test the second round! ----" << endl;
 
@@ -75,7 +75,7 @@ int main(int argc, char **argv) {
         conn.writeQuery((void *)queryData.data(), queryData.size());
         while(!conn.isResponseReady()) sleep(1);
         conn.readResponse(bufPtr);
-        cout << "response:" << (char *)bufPtr->getData() << endl;
+        cout << "response:" << (char *)bufPtr->getData() << ", with length " << bufPtr->getSizeInBytes() << endl;
 
         cout << "---- Test the third round! ----" << endl;
         CRdmaClientConnectionInfo anotherConn;
@@ -89,7 +89,7 @@ int main(int argc, char **argv) {
         anotherConn.writeQuery((void *)queryData.data(), queryData.size());
         while(!anotherConn.isResponseReady()) sleep(1);
         anotherConn.readResponse(bufPtr);
-        cout << "response:" << (char *)bufPtr->getData() << endl;
+        cout << "response:" << (char *)bufPtr->getData() << ", with length " << bufPtr->getSizeInBytes() << endl;
     }
     Java_org_apache_hadoop_hbase_ipc_RdmaNative_rdmaDestroyGlobal(NULL, NULL);
 }
