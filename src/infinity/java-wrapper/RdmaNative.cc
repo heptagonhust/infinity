@@ -217,6 +217,11 @@ JNIEXPORT jboolean JNICALL Java_org_apache_hadoop_hbase_ipc_RdmaNative_00024Rdma
     if (tmpJAddr == NULL)
         REPORT_ERROR_BOOL("jDataBuffer addr is null");
     try {
+        std::cerr << "RdmaNative direct dump (writeQuery) [";
+        for(size_t cter = 0; cter < env->GetDirectBufferCapacity(jDataBuffer); ++cter) {
+            std::cerr << (char *)tmpJAddr + cter << ' ';
+        }
+        std::cerr << ']' << std::endl;
         pConn->writeQuery(tmpJAddr, env->GetDirectBufferCapacity(jDataBuffer));
     } catch (std::exception &e) {
         REPORT_ERROR_BOOL(e.what());
