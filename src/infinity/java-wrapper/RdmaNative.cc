@@ -184,6 +184,7 @@ JNIEXPORT jobject JNICALL Java_org_apache_hadoop_hbase_ipc_RdmaNative_00024RdmaC
 
     checkedDelete(previousResponseDataPtr);
     try {
+        while(!pConn->isResponseReady()) ;
         pConn->readResponse(previousResponseDataPtr);
         if (previousResponseDataPtr == nullptr)
             throw std::runtime_error("readResponse return null");
