@@ -186,7 +186,7 @@ bool Context::pollSendCompletionQueue() {
 		if (wc.status == IBV_WC_SUCCESS) {
 			INFINITY_DEBUG("[INFINITY][CORE][CONTEXT] Request completed (id %lu).\n", wc.wr_id);
 		} else {
-			INFINITY_DEBUG("[INFINITY][CORE][CONTEXT] Request failed (id %lu errno %d).\n", wc.wr_id, errno);
+			INFINITY_DEBUG("[INFINITY][CORE][CONTEXT] Request failed (id %lu errno %d status %d).\n", wc.wr_id, errno, wc.status);
             throw std::runtime_error("[INFINITY][CORE][CONTEXT] Request failed. read the log.");
 		}
 		return true;
