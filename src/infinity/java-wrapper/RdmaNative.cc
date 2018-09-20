@@ -11,7 +11,7 @@
  */
 JNIEXPORT jboolean JNICALL Java_org_apache_hadoop_hbase_ipc_RdmaNative_rdmaInitGlobal(JNIEnv *, jclass) {
     rdma_debug << "WWWWWWWWWWWARNING: Someone is creating rdmaGlobal" << std::endl;
-    if(context != nullptr) {
+    if (context != nullptr) {
         rdma_error << "You are init global but context is already inited" << std::endl;
     }
     try {
@@ -44,13 +44,13 @@ JNIEXPORT void JNICALL Java_org_apache_hadoop_hbase_ipc_RdmaNative_rdmaDestroyGl
         abort();                                                                                                               \
     } while (0)
 
-#define REPORT_ERROR(msg)                                                                                                \
+#define REPORT_ERROR(msg)                                                                                                      \
     do {                                                                                                                       \
         std::cerr << "RdmaNative ERROR: " __FILE__ ":" << __LINE__ << msg << "Returning error code to java..." << std::endl;   \
         return NULL;                                                                                                           \
     } while (0)
 
-#define REPORT_ERROR_BOOL(msg)                                                                                                      \
+#define REPORT_ERROR_BOOL(msg)                                                                                                 \
     do {                                                                                                                       \
         std::cerr << "RdmaNative ERROR: " __FILE__ ":" << __LINE__ << msg << "Returning error code to java..." << std::endl;   \
         return JNI_FALSE;                                                                                                      \
@@ -184,7 +184,8 @@ JNIEXPORT jobject JNICALL Java_org_apache_hadoop_hbase_ipc_RdmaNative_00024RdmaC
 
     checkedDelete(previousResponseDataPtr);
     try {
-        while(!pConn->isResponseReady()) ;
+        while (!pConn->isResponseReady())
+            ;
         pConn->readResponse(previousResponseDataPtr);
         if (previousResponseDataPtr == nullptr)
             throw std::runtime_error("readResponse return null");
@@ -260,6 +261,34 @@ JNIEXPORT jboolean JNICALL Java_org_apache_hadoop_hbase_ipc_RdmaNative_00024Rdma
 
 /*
  * Class:     org_apache_hadoop_hbase_ipc_RdmaNative_RdmaServerConnection
+ * Method:    getClientIp
+ * Signature: ()[B
+ */
+JNIEXPORT jbyteArray JNICALL Java_org_apache_hadoop_hbase_ipc_RdmaNative_00024RdmaServerConnection_getClientIp(JNIEnv *env,
+                                                                                                               jobject self) {
+    jclass jConnCls = env->FindClass("org/apache/hadoop/hbase/ipc/RdmaNative$RdmaServerConnection");
+    if (jConnCls == NULL)
+        REPORT_ERROR("Unable to find class org/apache/hadoop/hbase/ipc/RdmaNative$RdmaServerConnection.");
+    jfieldID jFieldCxxPtr = env->GetFieldID(jConnCls, "ptrCxxClass", "J");
+    if (jFieldCxxPtr == NULL)
+        REPORT_ERROR("Unable to getFieldId `ptrCxxClass`");
+    jlong cxxPtr = env->GetLongField(self, jFieldCxxPtr);
+    CRdmaServerConnectionInfo *pConn = (CRdmaServerConnectionInfo *)cxxPtr;
+    if (pConn == nullptr)
+        REPORT_ERROR("cxx conn ptr is nullptr. is the connection closed?");
+
+    static_assert(sizeof(jbyte) == sizeof(char), "jbyte must have the same size with char");
+    std::string clientIp = pConn->getClientIp();
+    const jbyte *jbyteBuf = (const jbyte *)clientIp.data();
+    jbyteArray ret = env->NewByteArray(clientIp.size());
+    if (ret == NULL)
+        REPORT_ERROR("newByteArray: return null");
+    env->SetByteArrayRegion(ret, 0, clientIp.size(), jbyteBuf);
+    return ret;
+}
+
+/*
+ * Class:     org_apache_hadoop_hbase_ipc_RdmaNative_RdmaServerConnection
  * Method:    isQueryReadable
  * Signature: ()Z
  */
@@ -277,11 +306,12 @@ JNIEXPORT jboolean JNICALL Java_org_apache_hadoop_hbase_ipc_RdmaNative_00024Rdma
         REPORT_FATAL("cxx conn ptr is nullptr. is the connection closed?");
 
     try {
-        if(pConn->isQueryReadable()) {
+        if (pConn->isQueryReadable()) {
             rdma_debug << "serverconn.isqueryreadable successed at obj" << self << std::endl;
             return true;
         } // debug TODO
-        else return false;
+        else
+            return false;
         return pConn->isQueryReadable();
     } catch (std::exception &e) {
         REPORT_FATAL(e.what());

@@ -25,6 +25,14 @@ JNIEXPORT jboolean JNICALL Java_org_apache_hadoop_hbase_ipc_RdmaNative_00024Rdma
 
 /*
  * Class:     org_apache_hadoop_hbase_ipc_RdmaNative_RdmaServerConnection
+ * Method:    getClientIp
+ * Signature: ()[B
+ */
+JNIEXPORT jbyteArray JNICALL Java_org_apache_hadoop_hbase_ipc_RdmaNative_00024RdmaServerConnection_getClientIp
+  (JNIEnv *, jobject);
+
+/*
+ * Class:     org_apache_hadoop_hbase_ipc_RdmaNative_RdmaServerConnection
  * Method:    readQuery
  * Signature: ()Ljava/nio/ByteBuffer;
  */
