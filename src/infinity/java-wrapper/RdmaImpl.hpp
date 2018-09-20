@@ -96,9 +96,10 @@ public:
         checkedDelete(pDynamicBufferTokenBuffer);
     }
 
-    void waitAndAccept() {
+    std::string waitAndAccept() {
         initFixedLocalBuffer();
         pQP = qpFactory->acceptIncomingConnection(pDynamicBufferTokenBufferToken, sizeof(DynamicBufferTokenBufferTokenType));
+        return pQP->peerAddr;
     }
 
     bool isQueryReadable() {

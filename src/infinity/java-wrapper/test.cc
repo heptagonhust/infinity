@@ -17,7 +17,7 @@ int main(int argc, char **argv) {
         void *dataPtr;
         uint64_t size;
         string responseData;
-        conn.waitAndAccept();
+        cout << "accepted. client addr " << conn.waitAndAccept() << endl;
 
 
         while(!conn.isQueryReadable());
@@ -40,7 +40,7 @@ int main(int argc, char **argv) {
 
         cout << "---- Test the third round! ----" << endl;
         CRdmaServerConnectionInfo anotherConn;
-        anotherConn.waitAndAccept();
+        cout << "accepted. client addr " << anotherConn.waitAndAccept() << endl;
 
         while(!anotherConn.isQueryReadable());
         anotherConn.readQuery(dataPtr, size);

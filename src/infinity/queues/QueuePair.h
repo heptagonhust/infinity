@@ -85,6 +85,7 @@ public:
 	uint16_t getLocalDeviceId();
 	uint32_t getQueuePairNumber();
 	uint32_t getSequenceNumber();
+    std::string peerAddr;
 
 public:
 

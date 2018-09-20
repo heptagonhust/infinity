@@ -80,8 +80,10 @@ QueuePair * QueuePairFactory::acceptIncomingConnection(void *userData, uint32_t 
 
 	serializedQueuePair *receiveBuffer = (serializedQueuePair*) calloc(1, sizeof(serializedQueuePair));
 	serializedQueuePair *sendBuffer = (serializedQueuePair*) calloc(1, sizeof(serializedQueuePair));
+    sockaddr_storage cliAddr;
+    socklen_t cliAddrLen;
 
-	int connectionSocket = accept(this->serverSocket, (sockaddr *) NULL, NULL);
+	int connectionSocket = accept(this->serverSocket, (sockaddr *)&cliAddr, &cliAddrLen);
 	INFINITY_ASSERT(connectionSocket >= 0, "[INFINITY][QUEUES][FACTORY] Cannot open connection socket(ret %d errno %d serversock %d).\n", connectionSocket, errno, this->serverSocket);
 
 	int32_t returnValue = recv(connectionSocket, receiveBuffer, sizeof(serializedQueuePair), 0);
@@ -89,6 +91,21 @@ QueuePair * QueuePairFactory::acceptIncomingConnection(void *userData, uint32_t 
 			sizeof(serializedQueuePair), returnValue);
 
 	QueuePair *queuePair = new QueuePair(this->context);
+
+    { // recolic: peer addr
+        char cliIpStr[INET6_ADDRSTRLEN];
+        // deal with both IPv4 and IPv6:
+        if (addr.ss_family == AF_INET) {
+            struct sockaddr_in *s = (struct sockaddr_in *)&addr;
+            port = ntohs(s->sin_port);
+            inet_ntop(AF_INET, &s->sin_addr, ipstr, sizeof ipstr);
+        } else { // AF_INET6
+            struct sockaddr_in6 *s = (struct sockaddr_in6 *)&addr;
+            port = ntohs(s->sin6_port);
+            inet_ntop(AF_INET6, &s->sin6_addr, ipstr, sizeof ipstr);
+        }
+        queuePair->peerAddr = cliIpStr;
+    }
 
 	sendBuffer->localDeviceId = queuePair->getLocalDeviceId();
 	sendBuffer->queuePairNumber = queuePair->getQueuePairNumber();
