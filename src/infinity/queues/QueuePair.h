@@ -17,6 +17,8 @@
 #include <infinity/memory/RegionToken.h>
 #include <infinity/requests/RequestToken.h>
 
+#include <string>
+
 namespace infinity {
 namespace queues {
 class QueuePairFactory;
