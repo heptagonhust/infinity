@@ -594,5 +594,14 @@ void* QueuePair::getUserData() {
 	return this->userData;
 }
 
+ibv_qp_state QueuePair::getState() {
+    struct ibv_qp_attr attr;
+    struct ibv_qp_init_attr init_attr;
+    
+    int ret = ibv_query_qp(ibvQueuePair, &attr, IBV_QP_STATE, &init_attr);
+    INFINITY_ASSERT(ret == 0, "[INFINITY][QUEUES][QUEUEPAIR] getState: ibv_query_qp failed.");
+    return attr.qp_state;
+}
+
 } /* namespace queues */
 } /* namespace infinity */

@@ -87,6 +87,7 @@ public:
 	uint16_t getLocalDeviceId();
 	uint32_t getQueuePairNumber();
 	uint32_t getSequenceNumber();
+    ibv_qp_state getState();
     std::string peerAddr;
 
 public:
