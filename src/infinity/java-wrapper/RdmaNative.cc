@@ -255,8 +255,17 @@ JNIEXPORT jboolean JNICALL Java_org_apache_hadoop_hbase_ipc_RdmaNative_00024Rdma
  * Method:    isClosed
  * Signature: ()Z
  */
-JNIEXPORT jboolean JNICALL Java_org_apache_hadoop_hbase_ipc_RdmaNative_00024RdmaServerConnection_isClosed(JNIEnv *, jobject) {
-    return JNI_TRUE;
+JNIEXPORT jboolean JNICALL Java_org_apache_hadoop_hbase_ipc_RdmaNative_00024RdmaServerConnection_isClosed(JNIEnv *env, jobject self) {
+    jclass jConnCls = env->FindClass("org/apache/hadoop/hbase/ipc/RdmaNative$RdmaClientConnection");
+    if (jConnCls == NULL)
+        REPORT_ERROR_BOOL("Unable to find class org/apache/hadoop/hbase/ipc/RdmaNative$RdmaClientConnection.");
+    jfieldID jFieldCxxPtr = env->GetFieldID(jConnCls, "ptrCxxClass", "J");
+    if (jFieldCxxPtr == NULL)
+        REPORT_ERROR_BOOL("Unable to getFieldId `ptrCxxClass`");
+    jlong cxxPtr = env->GetLongField(self, jFieldCxxPtr);
+    CRdmaClientConnectionInfo *pConn = (CRdmaClientConnectionInfo *)cxxPtr;
+ 
+    return pConn == nullptr;
 }
 
 /*
