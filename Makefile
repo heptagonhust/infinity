@@ -99,3 +99,6 @@ java: library
 
 java-test: library
 	$(CC) src/infinity/java-wrapper/RdmaNative.cc src/infinity/java-wrapper/RdmaImpl.cc src/infinity/java-wrapper/test.cc $(CC_FLAGS) -I src/ -I $(JAVA_HOME)/include -I $(JAVA_HOME)/include/linux -L $(RELEASE_FOLDER) $(LD_FLAGS) -o $(RELEASE_FOLDER)/RdmaNativeTest
+
+run-test: java-test
+	bash ./hustTest.sh
