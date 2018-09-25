@@ -192,7 +192,7 @@ class CRdmaClientConnectionInfo {
         return *(magic_t *)serverMagicBuffer.getData();
     }
 
-    std::string jAddrToAddr(const char *jAddr)
+    std::string jAddrToAddr(const char *jAddr) {
         // inode112/10.10.0.112:16020
         std::string tmp(jAddr);
         size_t slashLoc = tmp.find('/');
@@ -200,7 +200,7 @@ class CRdmaClientConnectionInfo {
             return tmp; // not jaddr
         size_t colonLoc = tmp.find(':');
         if(colonLoc == std::string::npos)
-            throw std::invalid_argument(std::string("illegal jServerAddrAndPort `") + jServerAddrAndPort + "`. Example: host/1.2.3.4:1080");
+            throw std::invalid_argument(std::string("illegal jAddr `") + jAddr + "`. Example: host/1.2.3.4:1080");
         std::string realAddr = tmp.substr(slashLoc+1, colonLoc-slashLoc-1);
         return realAddr;
     }
