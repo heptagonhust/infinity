@@ -192,14 +192,28 @@ class CRdmaClientConnectionInfo {
         return *(magic_t *)serverMagicBuffer.getData();
     }
 
+    std::string jAddrToAddr(const char *jAddr)
+        // inode112/10.10.0.112:16020
+        std::string tmp(jAddr);
+        size_t slashLoc = tmp.find('/');
+        if(slashLoc == std::string::npos)
+            return tmp; // not jaddr
+        size_t colonLoc = tmp.find(':');
+        if(colonLoc == std::string::npos)
+            throw std::invalid_argument(std::string("illegal jServerAddrAndPort `") + jServerAddrAndPort + "`. Example: host/1.2.3.4:1080");
+        std::string realAddr = tmp.substr(slashLoc+1, colonLoc-slashLoc-1);
+        return realAddr;
+    }
+
   public:
     CRdmaClientConnectionInfo() : pQP(nullptr), pRemoteDynamicBufferTokenBufferToken(nullptr),
     remoteBufferCurrentSize(4096) {
 
     }
     ~CRdmaClientConnectionInfo() { checkedDelete(pQP); }
+
     void connectToRemote(const char *serverAddr, int serverPort) {
-        pQP = qpFactory->connectToRemoteHost(serverAddr, serverPort);
+        pQP = qpFactory->connectToRemoteHost(jAddrToAddr(serverAddr).c_str(), serverPort);
         pRemoteDynamicBufferTokenBufferToken = reinterpret_cast<memory::RegionToken *>(pQP->getUserData());
     }
 
