@@ -60,6 +60,8 @@ void QueuePairFactory::bindToPort(uint16_t port) {
 	int32_t enabled = 1;
 	int32_t returnValue = setsockopt(serverSocket, SOL_SOCKET, SO_REUSEADDR, &enabled, sizeof(enabled));
 	INFINITY_ASSERT(returnValue == 0, "[INFINITY][QUEUES][FACTORY] Cannot set socket option to reuse address.\n");
+	returnValue = setsockopt(serverSocket, SOL_SOCKET, SO_REUSEPORT, &enabled, sizeof(enabled));
+	INFINITY_ASSERT(returnValue == 0, "[INFINITY][QUEUES][FACTORY] Cannot set socket option to reuse port.\n");
 
 	returnValue = bind(serverSocket, (sockaddr *) &serverAddress, sizeof(sockaddr_in));
 	INFINITY_ASSERT(returnValue == 0, "[INFINITY][QUEUES][FACTORY] Cannot bind to local address and port.\n");
