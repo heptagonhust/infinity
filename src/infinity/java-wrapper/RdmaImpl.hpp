@@ -127,6 +127,7 @@ public:
     }
 
     void readQuery(void *&dataPtr, uint64_t &dataSize) {
+        rdma_debug << "SERVER " << (long)this << ": readQuery called" << std::endl;
         if (pServerStatus->magic != MAGIC_QUERY_WROTE)
             throw std::runtime_error("Query is not readable while calling readQuery");
         dataPtr = pDynamicBuffer->getData();
@@ -260,6 +261,7 @@ class CRdmaClientConnectionInfo {
     bool isResponseReady() { return rdmaGetServerMagic() == MAGIC_RESPONSE_READY; }
 
     void readResponse(memory::Buffer *&pResponseDataBuf) {
+        rdma_debug << "CLIENT " << (long)this << ": readResponse called" << std::endl;
         // Undefined behavior if the response is not ready.
         requests::RequestToken reqToken(context);
         memory::Buffer tempTokenBuffer(context, sizeof(ServerStatusType));
