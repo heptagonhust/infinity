@@ -39,20 +39,20 @@ JNIEXPORT void JNICALL Java_org_apache_hadoop_hbase_ipc_RdmaNative_rdmaDestroyGl
 
 #define REPORT_FATAL(msg)                                                                                                      \
     do {                                                                                                                       \
-        std::cerr << "RdmaNative FATAL: " __FILE__ ":" << __LINE__ << msg << "Unable to pass error to Java. Have to abort..."  \
+        std::cerr << "RdmaNative FATAL: " __FILE__ ":" << __LINE__ << " errno=" << errno << ":" << msg << "Unable to pass error to Java. Have to abort..."  \
                   << std::endl;                                                                                                \
         abort();                                                                                                               \
     } while (0)
 
 #define REPORT_ERROR(msg)                                                                                                      \
     do {                                                                                                                       \
-        std::cerr << "RdmaNative ERROR: " __FILE__ ":" << __LINE__ << msg << "Returning error code to java..." << std::endl;   \
+        std::cerr << "RdmaNative ERROR: " __FILE__ ":" << __LINE__ << " errno=" << errno << ":" << msg << "Returning error code to java..." << std::endl;   \
         return NULL;                                                                                                           \
     } while (0)
 
 #define REPORT_ERROR_BOOL(msg)                                                                                                 \
     do {                                                                                                                       \
-        std::cerr << "RdmaNative ERROR: " __FILE__ ":" << __LINE__ << msg << "Returning error code to java..." << std::endl;   \
+        std::cerr << "RdmaNative ERROR: " __FILE__ ":" << __LINE__ << " errno=" << errno << ":" << msg << "Returning error code to java..." << std::endl;   \
         return JNI_FALSE;                                                                                                      \
     } while (0)
 
