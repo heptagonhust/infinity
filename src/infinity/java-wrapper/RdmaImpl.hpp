@@ -134,6 +134,7 @@ public:
     }
 
     void writeResponse(const void *dataPtr, uint64_t dataSize) {
+        rdma_debug << "SERVER " << (long)this << ": writeResponse called" << std::endl;
         if (pServerStatus->magic != MAGIC_QUERY_WROTE)
             throw std::runtime_error(std::string("write response: wrong magic. Want 0xaaaaaaaa, got ") +
                                      std::to_string(pServerStatus->magic));
@@ -218,6 +219,7 @@ class CRdmaClientConnectionInfo {
     }
 
     void writeQuery(void *dataPtr, uint64_t dataSize) {
+        rdma_debug << "CLIENT " << (long)this << ": writeQuery called" << std::endl;
         memory::Buffer wrappedDataBuffer(context, dataPtr, dataSize);
         memory::Buffer wrappedSizeBuffer(context, &dataSize, sizeof(dataSize));
 #if !HUST
