@@ -93,7 +93,7 @@ Context::~Context() {
     	// Destroy protection domain
     	returnValue = ibv_dealloc_pd(this->ibvProtectionDomain);
         // TODO: Client fatal error: can not delete pd. return EBUSY(16).
-    	INFINITY_ASSERT(returnValue == 0, "[INFINITY][CORE][CONTEXT] Could not delete protection domain\n");
+    	// INFINITY_ASSERT(returnValue == 0, "[INFINITY][CORE][CONTEXT] Could not delete protection domain\n");
     }
     catch(...) {
     	// Close device even if other operation failed.
