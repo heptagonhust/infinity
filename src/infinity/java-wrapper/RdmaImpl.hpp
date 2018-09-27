@@ -15,14 +15,33 @@ using namespace infinity;
 #include <stdexcept>
 #include "fuckhust.hpp"
 
+/////////////////////// current time
+#include <string>
+#include <stdio.h>
+#include <time.h>
+
+// Get current date/time, format is YYYY-MM-DD.HH:mm:ss
+inline const std::string currentDateTime() {
+    time_t     now = time(0);
+    struct tm  tstruct;
+    char       buf[80];
+    tstruct = *localtime(&now);
+    // Visit http://en.cppreference.com/w/cpp/chrono/c/strftime
+    // for more information about date/time format
+    strftime(buf, sizeof(buf), "%Y-%m-%d.%X", &tstruct);
+
+    return buf;
+}
+//////////////////// current time end
+
 #ifdef RDEBUG
-#define rdma_debug std::cerr << "RdmaNative Debug: "
+#define rdma_debug std::cerr << currentDateTime() << "|RdmaNative Debug: "
 #else
 #define rdma_debug                                                                                                             \
     if (false)                                                                                                                 \
     std::cerr
 #endif
-#define rdma_error std::cerr << "RdmaNative: "
+#define rdma_error std::cerr << currentDateTime() << "|RdmaNative: "
 
 #ifndef uint32_t
 #define uint32_t unsigned int
