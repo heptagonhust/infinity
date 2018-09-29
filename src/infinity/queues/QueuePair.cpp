@@ -35,7 +35,7 @@ int OperationFlags::ibvFlags() {
     flags |= IBV_SEND_SIGNALED;
   }
   if (inlined) {
-    //flags |= IBV_SEND_INLINE;
+    flags |= IBV_SEND_INLINE;
   }
   return flags;
 }

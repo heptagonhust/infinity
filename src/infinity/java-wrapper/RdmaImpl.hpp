@@ -47,7 +47,7 @@ inline const std::string currentDateTime() {
 #define uint64_t unsigned long long
 #endif
 
-#define INIT_BUFFER_SIZE 10000
+#define INIT_BUFFER_SIZE 4096
 
 template <typename T> inline void checkedDelete(T *&ptr) {
     if (ptr)
@@ -271,7 +271,12 @@ class CRdmaClientConnectionInfo {
         reqToken.waitUntilCompleted();
         memory::RegionToken remoteDynamicBufferToken = ((ServerStatusType *)tempTokenBuffer.getData())->dynamicBufferToken;
         rdma_debug << "real data write ---" << std::endl;
-        pQP->write(&wrappedDataBuffer, &remoteDynamicBufferToken, &reqToken);
+        // workaround for buffer to large unknown bug:
+        for(size_t cter = 0; cter < dataSize / 2048; ++cter) {
+            pQP->write(&wrappedDataBuffer, cter*2048, &remoteDynamicBufferToken, cter*2048, 2048, queues::OperationFlags(), &reqToken);
+        }
+        if(dataSize % 2-48 != 0)
+            pQP->write(&wrappedDataBuffer, dataSize/2048*2048, &remoteDynamicBufferToken, dataSize/2048*2048, dataSize%2048, queues::OperationFlags(), &reqToken);
         reqToken.waitUntilCompleted();
         rdma_debug << "real data write done ---" << std::endl;
 

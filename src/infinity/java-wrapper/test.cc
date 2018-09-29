@@ -42,6 +42,7 @@ int main(int argc, char **argv) {
 
         conn.readQuery(dataPtr, size);
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time4);
+        cout << "hi-" << ((char *)dataPtr)[500] << ((char *)dataPtr)[2500] << endl;
 
         conn.writeResponse(responseData.data(), responseData.size());
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time5);
