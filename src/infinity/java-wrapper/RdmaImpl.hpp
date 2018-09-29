@@ -139,6 +139,7 @@ public:
                 checkedDelete(pDynamicBuffer);
                 pDynamicBuffer = new memory::Buffer(context, queryLength);
                 pDynamicBuffer->createRegionTokenAt(&pServerStatus->dynamicBufferToken);
+                //pDynamicBuffer->resize(queryLength);
                 currentBufferSize = queryLength;
             }
             pServerStatus->magic = MAGIC_SERVER_BUFFER_READY;
@@ -161,7 +162,9 @@ public:
             throw std::runtime_error(std::string("write response: wrong magic. Want 0xaaaaaaaa, got ") +
                                      std::to_string(pServerStatus->magic));
         if(dataSize > currentBufferSize) {
-            pDynamicBuffer->resize(dataSize);
+            checkedDelete(pDynamicBuffer);
+            pDynamicBuffer = new memory::Buffer(context, dataSize);
+            //pDynamicBuffer->resize(dataSize);
             pDynamicBuffer->createRegionTokenAt(&pServerStatus->dynamicBufferToken);
             currentBufferSize = dataSize;
         }
