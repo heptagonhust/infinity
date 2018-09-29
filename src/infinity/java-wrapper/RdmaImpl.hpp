@@ -271,11 +271,11 @@ class CRdmaClientConnectionInfo {
         reqToken.waitUntilCompleted();
         memory::RegionToken remoteDynamicBufferToken = ((ServerStatusType *)tempTokenBuffer.getData())->dynamicBufferToken;
         rdma_debug << "real data write ---" << std::endl;
-        // workaround for buffer to large unknown bug:
+        // workaround for buffer to large unknown bug(at most 2048 byte per read/write):
         for(size_t cter = 0; cter < dataSize / 2048; ++cter) {
             pQP->write(&wrappedDataBuffer, cter*2048, &remoteDynamicBufferToken, cter*2048, 2048, queues::OperationFlags(), &reqToken);
         }
-        if(dataSize % 2-48 != 0)
+        if(dataSize % 2048 != 0)
             pQP->write(&wrappedDataBuffer, dataSize/2048*2048, &remoteDynamicBufferToken, dataSize/2048*2048, dataSize%2048, queues::OperationFlags(), &reqToken);
         reqToken.waitUntilCompleted();
         rdma_debug << "real data write done ---" << std::endl;
@@ -295,10 +295,16 @@ class CRdmaClientConnectionInfo {
         memory::RegionToken remoteDynamicBufferToken = ((ServerStatusType *)tempTokenBuffer.getData())->dynamicBufferToken;
         uint64_t realResponseLen = rdmaGetServerCurrentResponseLength();
         memory::Buffer *pResponseData = new memory::Buffer(context, realResponseLen);
-        pQP->read(pResponseData, &remoteDynamicBufferToken, realResponseLen, &reqToken);
-
+        // workaround for buffer to large unknown bug(at most 2048 byte per read/write):
+        //pQP->read(pResponseData, &remoteDynamicBufferToken, realResponseLen, &reqToken);
+        for(size_t cter = 0; cter < realResponseLen / 2048; ++cter) {
+            pQP->read(pResponseData, cter*2048, &remoteDynamicBufferToken, cter*2048, 2048, queues::OperationFlags(), &reqToken);
+        }
+        if(realResponseLen % 2048 != 0)
+            pQP->read(pResponseData, realResponseLen/2048*2048, &remoteDynamicBufferToken,  realResponseLen/2048*2048, realResponseLen%2048, queues::OperationFlags(), &reqToken);
+ 
         // Set the server status to initial status after used!
-        rdmaSetServerCurrentQueryLength(0);
+        rdmaSetServerCurrentQueryLength(0); // will wait for complete
         rdmaSetServerMagic(MAGIC_CONNECTED);
 
         pResponseDataBuf = pResponseData;
