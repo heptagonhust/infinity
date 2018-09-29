@@ -47,6 +47,8 @@ inline const std::string currentDateTime() {
 #define uint64_t unsigned long long
 #endif
 
+#define INIT_BUFFER_SIZE 6000
+
 template <typename T> inline void checkedDelete(T *&ptr) {
     if (ptr)
         delete ptr;
@@ -104,7 +106,7 @@ class CRdmaServerConnectionInfo {
 
 public:
     CRdmaServerConnectionInfo() : pQP(nullptr), pDynamicBuffer(nullptr), 
-    pDynamicBufferTokenBuffer(nullptr), pDynamicBufferTokenBufferToken(nullptr), currentBufferSize(4096) {
+    pDynamicBufferTokenBuffer(nullptr), pDynamicBufferTokenBufferToken(nullptr), currentBufferSize(INIT_BUFFER_SIZE) {
 
     }
     ~CRdmaServerConnectionInfo() {
@@ -225,7 +227,7 @@ class CRdmaClientConnectionInfo {
 
   public:
     CRdmaClientConnectionInfo() : pQP(nullptr), pRemoteDynamicBufferTokenBufferToken(nullptr),
-    remoteBufferCurrentSize(4096) {
+    remoteBufferCurrentSize(INIT_BUFFER_SIZE) {
 
     }
     ~CRdmaClientConnectionInfo() { checkedDelete(pQP); }
