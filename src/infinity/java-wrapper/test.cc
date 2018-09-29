@@ -29,24 +29,25 @@ int main(int argc, char **argv) {
         cout << "Sleeping 5 seconds to wait for the client reading response..." << endl;
         sleep(5); // the client is still reading thr response!
 
-        cout << "---- Test the second round! ----" << endl;
+        cout << "---- Test the second and 3rd round(parallel read Query & write response)! ----" << endl;
+        CRdmaServerConnectionInfo anotherConn;
+        anotherConn.waitAndAccept();
+        cout << "accepted. client addr " << anotherConn.getClientIp() << endl;
 
         while(!conn.isQueryReadable());
         conn.readQuery(dataPtr, size);
         cout << "query:" << (char *)dataPtr << ", with length " << size << endl;
+        while(!anotherConn.isQueryReadable());
+        anotherConn.readQuery(dataPtr, size);
+        cout << "query:" << (char *)dataPtr << ", with length " << size << endl;
+ 
         responseData = "FFFFFFFFFFFFFFucking!!!";
         conn.writeResponse(responseData.data(), responseData.size());
         cout << "Sleeping 5 seconds to wait for the client reading response..." << endl;
         sleep(5); // the client is still reading thr response!
 
         cout << "---- Test the third round! ----" << endl;
-        CRdmaServerConnectionInfo anotherConn;
-        anotherConn.waitAndAccept();
-        cout << "accepted. client addr " << anotherConn.getClientIp() << endl;
 
-        while(!anotherConn.isQueryReadable());
-        anotherConn.readQuery(dataPtr, size);
-        cout << "query:" << (char *)dataPtr << ", with length " << size << endl;
         responseData = "Ml with you the 3rd time.";
         anotherConn.writeResponse(responseData.data(), responseData.size());
         cout << "Sleeping 5 seconds to wait for the client reading response..." << endl;
