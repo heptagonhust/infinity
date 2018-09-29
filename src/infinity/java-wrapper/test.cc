@@ -40,6 +40,8 @@ int main(int argc, char **argv) {
         while(!anotherConn.isQueryReadable());
         anotherConn.readQuery(dataPtr, size);
         cout << "query:" << (char *)dataPtr << ", with length " << size << endl;
+
+        if(anotherConn.isQueryReadable()) throw std::runtime_error("Query is readable after actually read!");
  
         responseData = "FFFFFFFFFFFFFFucking!!!";
         conn.writeResponse(responseData.data(), responseData.size());
