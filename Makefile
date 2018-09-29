@@ -100,7 +100,7 @@ java-test: library
 	$(CXX) src/infinity/java-wrapper/RdmaNative.cc src/infinity/java-wrapper/RdmaImpl.cc src/infinity/java-wrapper/test.cc $(CXX_FLAGS) -I src/ -I $(JAVA_HOME)/include -I $(JAVA_HOME)/include/linux -L $(RELEASE_FOLDER) $(LD_FLAGS) -o $(RELEASE_FOLDER)/RdmaNativeTest
 
 perf: library
-	$(CXX) src/infinity/java-wrapper/RdmaNative.cc src/infinity/java-wrapper/RdmaImpl.cc src/infinity/java-wrapper/perf.cc $(CXX_FLAGS) -I src/ -I $(JAVA_HOME)/include -I $(JAVA_HOME)/include/linux -L $(RELEASE_FOLDER) $(LD_FLAGS) -o $(RELEASE_FOLDER)/RdmaNativeTest
+	$(CXX) src/infinity/java-wrapper/RdmaNative.cc src/infinity/java-wrapper/RdmaImpl.cc src/infinity/java-wrapper/perf.cc $(CXX_FLAGS) -I src/ -I $(JAVA_HOME)/include -I $(JAVA_HOME)/include/linux -L $(RELEASE_FOLDER) $(LD_FLAGS) -lrt -o $(RELEASE_FOLDER)/perf
 
 run-test: java-test
 	bash ./hustTest.sh
