@@ -65,6 +65,7 @@ enum magic_t : uint32_t {
     MAGIC_CONNECTED = 0x00000000,
     MAGIC_SERVER_BUFFER_READY = 0xffffffff,
     MAGIC_QUERY_WROTE = 0xaaaaaaaa,
+    MAGIC_QUERY_READ = 0xaaaa5555,
     MAGIC_RESPONSE_READY = 0x55555555
 };
 #if HUST
@@ -148,11 +149,12 @@ public:
             throw std::runtime_error("Query is not readable while calling readQuery");
         dataPtr = pDynamicBuffer->getData();
         dataSize = pServerStatus->currentQueryLength;
+        pServerStatus->magic = MAGIC_QUERY_READ;
     }
 
     void writeResponse(const void *dataPtr, uint64_t dataSize) {
         rdma_debug << "SERVER " << (long)this << ": writeResponse called. dataPtr is " << (long)dataPtr << ",dataSize is " << dataSize << std::endl;
-        if (pServerStatus->magic != MAGIC_QUERY_WROTE)
+        if (pServerStatus->magic != MAGIC_QUERY_READ)
             throw std::runtime_error(std::string("write response: wrong magic. Want 0xaaaaaaaa, got ") +
                                      std::to_string(pServerStatus->magic));
         if(dataSize > currentBufferSize) {
@@ -164,7 +166,7 @@ public:
         pServerStatus->currentResponseLength = dataSize;
         std::memcpy(pDynamicBuffer->getData(), dataPtr, dataSize);
 
-        if (pServerStatus->magic != MAGIC_QUERY_WROTE)
+        if (pServerStatus->magic != MAGIC_QUERY_READ)
             throw std::runtime_error("write response: magic is changed while copying memory data.");
         pServerStatus->magic = MAGIC_RESPONSE_READY;
     }
@@ -176,7 +178,6 @@ class CRdmaClientConnectionInfo {
     uint64_t remoteBufferCurrentSize; // If this query is smaller than last, do not wait for the server to allocate space.
 
     void rdmaSetServerCurrentQueryLength(uint64_t queryLength) {
-        // write the magic to MAGIC_QUERY_WROTE
         requests::RequestToken reqToken(context);
         memory::Buffer queryLenBuffer(context, sizeof(uint64_t));
         *(uint64_t *)queryLenBuffer.getData() = queryLength;
@@ -191,7 +192,6 @@ class CRdmaClientConnectionInfo {
         return *(uint64_t *)serverResponseLenBuffer.getData();
     }
     void rdmaSetServerMagic(magic_t magic) {
-        // write the magic to MAGIC_QUERY_WROTE
         requests::RequestToken reqToken(context);
         memory::Buffer serverMagicBuffer(context, sizeof(magic_t));
         *(magic_t *)serverMagicBuffer.getData() = magic;
