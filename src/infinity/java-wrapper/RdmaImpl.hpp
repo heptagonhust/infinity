@@ -47,7 +47,7 @@ inline const std::string currentDateTime() {
 #define uint64_t unsigned long long
 #endif
 
-#define INIT_BUFFER_SIZE 6000
+#define INIT_BUFFER_SIZE 10000
 
 template <typename T> inline void checkedDelete(T *&ptr) {
     if (ptr)
