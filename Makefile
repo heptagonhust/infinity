@@ -60,7 +60,7 @@ BUILD_DIRECTORIES	= $(patsubst $(SOURCE_FOLDER)/%,$(BUILD_FOLDER)/%,$(SOURCE_DIR
 
 ##################################################
 
-all: library java java-test
+all: library java java-test perf
 
 ##################################################
 

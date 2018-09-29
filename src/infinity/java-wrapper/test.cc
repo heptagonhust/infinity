@@ -2,23 +2,9 @@
 #include <iostream>
 #include <string>
 #include <unistd.h>
-#include <time.h>
 #include "org_apache_hadoop_hbase_ipc_RdmaNative.h"
 
 using namespace std;
-timespec diff(timespec start, timespec end)
-{
-    timespec temp;
-    if ((end.tv_nsec-start.tv_nsec)<0) {
-        temp.tv_sec = end.tv_sec-start.tv_sec-1;
-        temp.tv_nsec = 1000000000+end.tv_nsec-start.tv_nsec;
-    } else {
-        temp.tv_sec = end.tv_sec-start.tv_sec;
-        temp.tv_nsec = end.tv_nsec-start.tv_nsec;
-    }
-    return temp;
-}
-
 int main(int argc, char **argv) {
     bool isServer = true;
     int serverPort = 25543;
@@ -30,55 +16,88 @@ int main(int argc, char **argv) {
         CRdmaServerConnectionInfo conn;
         void *dataPtr;
         uint64_t size;
-        string responseData(500000, 'a');
-
-        timespec time1, time2,time3,time4,time5;
-    clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time1);
+        string responseData;
         conn.waitAndAccept();
-    clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time2);
+        cout << "accepted. client addr " << conn.getClientIp() << endl;
+
 
         while(!conn.isQueryReadable());
-    clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time3);
-
         conn.readQuery(dataPtr, size);
-    clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time4);
-        cout << "hi-" << ((char *)dataPtr)[500] << ((char *)dataPtr)[4500] << endl;
-
+        cout << "query:" << (char *)dataPtr << ", with length " << size << endl;
+        responseData = "fuckFirstPkg";
         conn.writeResponse(responseData.data(), responseData.size());
-    clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time5);
-    cout<<diff(time1,time2).tv_sec<<":"<<diff(time1,time2).tv_nsec<<endl;
-    cout<<diff(time2,time3).tv_sec<<":"<<diff(time2,time3).tv_nsec<<endl;
-    cout<<diff(time3,time4).tv_sec<<":"<<diff(time3,time4).tv_nsec<<endl;
-    cout<<diff(time4,time5).tv_sec<<":"<<diff(time4,time5).tv_nsec<<endl;
+        cout << "Sleeping 5 seconds to wait for the client reading response..." << endl;
+        sleep(5); // the client is still reading thr response!
 
+        cout << "---- Test the second and 3rd round(parallel read Query & write response)! ----" << endl;
+        CRdmaServerConnectionInfo anotherConn;
+        anotherConn.waitAndAccept();
+        cout << "accepted. client addr " << anotherConn.getClientIp() << endl;
 
+        while(!conn.isQueryReadable());
+        conn.readQuery(dataPtr, size);
+        cout << "query:" << (char *)dataPtr << ", with length " << size << endl;
+        while(!anotherConn.isQueryReadable());
+        anotherConn.readQuery(dataPtr, size);
+        cout << "query:" << (char *)dataPtr << ", with length " << size << endl;
+
+        if(anotherConn.isQueryReadable()) throw std::runtime_error("Query is readable after actually read!");
+ 
+        responseData = "FFFFFFFFFFFFFFucking!!!";
+        conn.writeResponse(responseData.data(), responseData.size());
+        cout << "Sleeping 5 seconds to wait for the client reading response..." << endl;
+        sleep(5); // the client is still reading thr response!
+
+        cout << "---- Test the third round! ----" << endl;
+
+        responseData = "Ml with you the 3rd time.";
+        anotherConn.writeResponse(responseData.data(), responseData.size());
+        cout << "Sleeping 5 seconds to wait for the client reading response..." << endl;
         sleep(5); // the client is still reading thr response!
     }
     else {
         cout << "client mode" << endl;
         serverName = argv[1];
         CRdmaClientConnectionInfo conn;
-        string queryData(500000, 'i');
+        string queryData;
         infinity::memory::Buffer *bufPtr;
 
-        timespec time1, time2,time3,time4,time5;
-    clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time1);
-        conn.connectToRemote(serverName.c_str(), serverPort);
-    clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time2);
+        _again:
+        try {
+            conn.connectToRemote(serverName.c_str(), serverPort);
+        }
+        catch(std::exception &e) {sleep(1);goto _again;}
 
+        queryData = "hello";
         conn.writeQuery((void *)queryData.data(), queryData.size());
-    clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time3);
         while(!conn.isResponseReady());
-    clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time4);
         conn.readResponse(bufPtr);
-        cout << "hi-" << ((char *)bufPtr->getData())[500] << ((char *)bufPtr->getData())[4500] << endl;
-    clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time5);
-    cout<<diff(time1,time2).tv_sec<<":"<<diff(time1,time2).tv_nsec<<endl;
-    cout<<diff(time2,time3).tv_sec<<":"<<diff(time2,time3).tv_nsec<<endl;
-    cout<<diff(time3,time4).tv_sec<<":"<<diff(time3,time4).tv_nsec<<endl;
-    cout<<diff(time4,time5).tv_sec<<":"<<diff(time4,time5).tv_nsec<<endl;
+        cout << "response:" << (char *)bufPtr->getData() << ", with length " << bufPtr->getSizeInBytes() << endl;
 
+        CRdmaClientConnectionInfo anotherConn;
+        _again2:
+        try {
+        cout << "---- connect the 2nd conn ----" << endl;
+            anotherConn.connectToRemote(serverName.c_str(), serverPort);
+        cout << "---- connect the 2nd conn done ----" << endl;
+        }
+        catch(std::exception &e) {sleep(1);goto _again2;}
 
+        cout << "---- Test the second 3rd round! ----" << endl;
+
+        queryData = "hello again";
+        conn.writeQuery((void *)queryData.data(), queryData.size());
+
+        queryData = "hello third ~";
+        anotherConn.writeQuery((void *)queryData.data(), queryData.size());
+
+        while(!conn.isResponseReady()) sleep(1);
+        conn.readResponse(bufPtr);
+        cout << "response:" << (char *)bufPtr->getData() << ", with length " << bufPtr->getSizeInBytes() << endl;
+
+        while(!anotherConn.isResponseReady()) sleep(1);
+        anotherConn.readResponse(bufPtr);
+        cout << "response:" << (char *)bufPtr->getData() << ", with length " << bufPtr->getSizeInBytes() << endl;
     }
     Java_org_apache_hadoop_hbase_ipc_RdmaNative_rdmaDestroyGlobal(NULL, NULL);
 }
