@@ -20,7 +20,7 @@
 
 #include <infinity/core/Configuration.h>
 #include <infinity/utils/Debug.h>
-
+#include <iostream> // todo: remove it
 #define MAX(a,b) ((a) > (b) ? (a) : (b))
 
 namespace infinity {
@@ -80,6 +80,7 @@ QueuePair::QueuePair(infinity::core::Context* context) :
 
 QueuePair::~QueuePair() {
 
+    std::cout << "tmpdebug: destroy qp " << (long)this->ibvQueuePair << std::endl;
 	int32_t returnValue = ibv_destroy_qp(this->ibvQueuePair);
 	INFINITY_ASSERT(returnValue == 0, "[INFINITY][QUEUES][QUEUEPAIR] Cannot delete queue pair.\n");
 
