@@ -133,7 +133,7 @@ public:
                 goto broken_value_read_again;
 
             if (queryLength > currentBufferSize) {
-                rdma_debug << "allocating new buffer rather than reusing old one..." << std::endl;
+                rdma_debug << "allocating new buffer rather than reusing old one... new length " << queryLength << std::endl;
                 pDynamicBuffer->resize(queryLength);
                 pDynamicBuffer->createRegionTokenAt(&pServerStatus->dynamicBufferToken);
                 currentBufferSize = queryLength;
