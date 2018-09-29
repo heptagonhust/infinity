@@ -236,7 +236,7 @@ class CRdmaClientConnectionInfo {
     }
 
     void writeQuery(void *dataPtr, uint64_t dataSize) {
-        rdma_debug << "CLIENT " << (long)this << ": writeQuery called" << std::endl;
+        rdma_debug << "CLIENT " << (long)this << ": writeQuery called. dataSize is " << dataSize << std::endl;
         memory::Buffer wrappedDataBuffer(context, dataPtr, dataSize);
         memory::Buffer wrappedSizeBuffer(context, &dataSize, sizeof(dataSize));
 #if !HUST
@@ -277,7 +277,7 @@ class CRdmaClientConnectionInfo {
     bool isResponseReady() { return rdmaGetServerMagic() == MAGIC_RESPONSE_READY; }
 
     void readResponse(memory::Buffer *&pResponseDataBuf) {
-        rdma_debug << "CLIENT " << (long)this << ": readResponse called" << std::endl;
+        rdma_debug << "CLIENT " << (long)this << ": readResponse called." << std::endl;
         // Undefined behavior if the response is not ready.
         requests::RequestToken reqToken(context);
         memory::Buffer tempTokenBuffer(context, sizeof(ServerStatusType));
