@@ -30,7 +30,7 @@ int main(int argc, char **argv) {
         CRdmaServerConnectionInfo conn;
         void *dataPtr;
         uint64_t size;
-        string responseData(2125, 'a');
+        string responseData(2135, 'a');
 
         timespec time1, time2,time3,time4,time5;
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time1);
@@ -57,7 +57,7 @@ int main(int argc, char **argv) {
         cout << "client mode" << endl;
         serverName = argv[1];
         CRdmaClientConnectionInfo conn;
-        string queryData(2125, 'i');
+        string queryData(2135, 'i');
         infinity::memory::Buffer *bufPtr;
 
         timespec time1, time2,time3,time4,time5;
