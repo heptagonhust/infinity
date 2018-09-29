@@ -73,10 +73,6 @@ int main(int argc, char **argv) {
         cout << "response:" << (char *)bufPtr->getData() << ", with length " << bufPtr->getSizeInBytes() << endl;
 
         cout << "---- Test the second round! ----" << endl;
-
-        queryData = "hello again";
-        conn.writeQuery((void *)queryData.data(), queryData.size());
-
         cout << "---- Test the third round! ----" << endl;
         CRdmaClientConnectionInfo anotherConn;
         _again2:
@@ -84,6 +80,12 @@ int main(int argc, char **argv) {
             anotherConn.connectToRemote(serverName.c_str(), serverPort);
         }
         catch(std::exception &e) {sleep(1);goto _again2;}
+
+
+        queryData = "hello again";
+        conn.writeQuery((void *)queryData.data(), queryData.size());
+
+
         anotherConn.writeQuery((void *)queryData.data(), queryData.size());
 
         while(!conn.isResponseReady()) sleep(1);
