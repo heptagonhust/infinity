@@ -137,7 +137,7 @@ public:
             if (queryLength > currentBufferSize) {
                 rdma_debug << "allocating new buffer rather than reusing old one... new length " << queryLength << std::endl;
                 pDynamicBuffer->resize(queryLength);
-                pDynamicBuffer->createRegionTokenAt(&pServerStatus->dynamicBufferToken);
+                pDynamicBuffer->createRegionTokenAt(&(pServerStatus->dynamicBufferToken));
                 currentBufferSize = queryLength;
             }
             pServerStatus->magic == MAGIC_SERVER_BUFFER_READY;
