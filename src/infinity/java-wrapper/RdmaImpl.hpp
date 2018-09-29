@@ -249,11 +249,9 @@ class CRdmaClientConnectionInfo {
 #endif
         requests::RequestToken reqToken(context);
         // write data size.
-        rdma_debug << "real data write ---" << std::endl;
         pQP->write(&wrappedSizeBuffer, 0, pRemoteDynamicBufferTokenBufferToken, offsetof(ServerStatusType, currentQueryLength),
                    sizeof(dataSize), queues::OperationFlags(), &reqToken);
         reqToken.waitUntilCompleted();
-        rdma_debug << "real data write done ---" << std::endl;
 
         // Wait for the server allocating buffer...
         if (dataSize > remoteBufferCurrentSize) {
@@ -270,8 +268,10 @@ class CRdmaClientConnectionInfo {
         pQP->read(&tempTokenBuffer, pRemoteDynamicBufferTokenBufferToken, &reqToken);
         reqToken.waitUntilCompleted();
         memory::RegionToken remoteDynamicBufferToken = ((ServerStatusType *)tempTokenBuffer.getData())->dynamicBufferToken;
+        rdma_debug << "real data write ---" << std::endl;
         pQP->write(&wrappedDataBuffer, &remoteDynamicBufferToken, &reqToken);
         reqToken.waitUntilCompleted();
+        rdma_debug << "real data write done ---" << std::endl;
 
         rdmaSetServerMagic(MAGIC_QUERY_WROTE);
     }
