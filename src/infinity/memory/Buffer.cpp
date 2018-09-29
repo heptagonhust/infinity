@@ -93,10 +93,10 @@ void Buffer::resize(uint64_t newSize, void* newData) {
 		newData = this->data;
 	}
 
-	if (oldData != newData) {
-		uint64_t copySize = MIN(newSize, oldSize);
-		memcpy(newData, oldData, copySize);
-	}
+	//if (oldData != newData) {
+	//	uint64_t copySize = MIN(newSize, oldSize);
+	//	memcpy(newData, oldData, copySize);
+	//}
 
 	if (memoryRegistered) {
 		ibv_dereg_mr(this->ibvMemoryRegion);
