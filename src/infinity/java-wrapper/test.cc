@@ -30,7 +30,7 @@ int main(int argc, char **argv) {
         CRdmaServerConnectionInfo conn;
         void *dataPtr;
         uint64_t size;
-        string responseData(3000, 'a');
+        string responseData(3000000, 'a');
 
         timespec time1, time2,time3,time4,time5;
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time1);
@@ -42,7 +42,7 @@ int main(int argc, char **argv) {
 
         conn.readQuery(dataPtr, size);
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time4);
-        cout << "hi-" << ((char *)dataPtr)[500] << ((char *)dataPtr)[2500] << endl;
+        cout << "hi-" << ((char *)dataPtr)[500] << ((char *)dataPtr)[2500000] << endl;
 
         conn.writeResponse(responseData.data(), responseData.size());
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time5);
@@ -58,7 +58,7 @@ int main(int argc, char **argv) {
         cout << "client mode" << endl;
         serverName = argv[1];
         CRdmaClientConnectionInfo conn;
-        string queryData(3000, 'i');
+        string queryData(3000000, 'i');
         infinity::memory::Buffer *bufPtr;
 
         timespec time1, time2,time3,time4,time5;
@@ -71,7 +71,7 @@ int main(int argc, char **argv) {
         while(!conn.isResponseReady());
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time4);
         conn.readResponse(bufPtr);
-        cout << "hi-" << ((char *)bufPtr->getData())[500] << ((char *)bufPtr->getData())[2500] << endl;
+        cout << "hi-" << ((char *)bufPtr->getData())[500] << ((char *)bufPtr->getData())[2500000] << endl;
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time5);
     cout<<diff(time1,time2).tv_sec<<":"<<diff(time1,time2).tv_nsec<<endl;
     cout<<diff(time2,time3).tv_sec<<":"<<diff(time2,time3).tv_nsec<<endl;
