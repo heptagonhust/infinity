@@ -71,6 +71,7 @@ int main(int argc, char **argv) {
         while(!conn.isResponseReady());
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time4);
         conn.readResponse(bufPtr);
+        cout << "hi-" << ((char *)bufPtr->getData())[500] << ((char *)bufPtr->getData())[2500] << endl;
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time5);
     cout<<diff(time1,time2).tv_sec<<":"<<diff(time1,time2).tv_nsec<<endl;
     cout<<diff(time2,time3).tv_sec<<":"<<diff(time2,time3).tv_nsec<<endl;
