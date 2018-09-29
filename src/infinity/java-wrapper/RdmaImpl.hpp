@@ -140,7 +140,7 @@ public:
                 pDynamicBuffer->createRegionTokenAt(&(pServerStatus->dynamicBufferToken));
                 currentBufferSize = queryLength;
             }
-            pServerStatus->magic == MAGIC_SERVER_BUFFER_READY;
+            pServerStatus->magic = MAGIC_SERVER_BUFFER_READY;
         }
         return pServerStatus->magic == MAGIC_QUERY_WROTE;
     }
