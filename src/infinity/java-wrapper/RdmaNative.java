@@ -36,13 +36,13 @@ public class RdmaNative {
 
     public class RdmaServerConnection {
         /* 
-            The server holds two buffer. DynamicBufferTokenBuffer holds std::pair<Magic, DynamicBufferToken>, and DynamicBuffer
-            holds the real data. The Magic is inited to 0x00000000 and set to 0xffffffff if DynamicBufferToken is ready to use.
-            (For the initial 4K buffer, the magic is 0x00000000)
+            The server holds two buffer registered for RDMA. DynamicBufferTokenBuffer holds struct<Magic, currentQuerySize, DynamicBufferToken>,
+            and DynamicBuffer holds the real query or response data. 
+            In fact, DynamicBufferTokenBuffer is the current "status" of server. Its "magic" is the current state of a state machine. 
 
+        The Magic is inited to 0x00000000 and set to 0xffffffff once DynamicBufferToken is ready for using.
             On accepting connection, the server creates a 4K DynamicBuffer, and register it, put the token into DynamicBufferTokenBuffer.
         begin:
-            DynamicBufferTokenBuffer has 3 area: magic, currentQuerySize, and DynamicBufferToken.
             Then the server send the DynamicBufferTokenBufferToken to client as userData. Then the client write its querySize into 
             DynamicBufferTokenBuffer. On server calling isQueryReadable(), it allocates the buffer if querySize available.
             If the client's query size is less than current DynamicBufferSize, it just write it in the existing dynamic buffer. 
