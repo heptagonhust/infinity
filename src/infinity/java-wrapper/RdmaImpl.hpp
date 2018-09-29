@@ -123,7 +123,6 @@ public:
     }
 
     bool isQueryReadable() {
-        rdma_debug << "tmpdebug> dyBufferSize is " << pDynamicBuffer->getSizeInBytes() << std::endl;
         // Use this chance to check if client has told server its query size and allocate buffer.
         if (pServerStatus->magic == MAGIC_CONNECTED && pServerStatus->currentQueryLength != 0) {
         // Warning: pServerStatus->currentQueryLength may be under editing! The read value maybe broken!
