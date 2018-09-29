@@ -102,6 +102,7 @@ void Buffer::resize(uint64_t newSize, void* newData) {
 		ibv_dereg_mr(this->ibvMemoryRegion);
 		this->ibvMemoryRegion = ibv_reg_mr(this->context->getProtectionDomain(), newData, newSize,
 				IBV_ACCESS_REMOTE_WRITE | IBV_ACCESS_LOCAL_WRITE | IBV_ACCESS_REMOTE_READ);
+        INFINITY_ASSERT(this->ibvMemoryRegion != NULL, "[INFINITY][MEMORY][BUFFER] ibv_reg_mr failed. errno %d\n", errno);
 		this->data = newData;
 		this->sizeInBytes = newSize;
 	} else {
