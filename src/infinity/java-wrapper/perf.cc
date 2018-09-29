@@ -6,15 +6,6 @@
 #include "org_apache_hadoop_hbase_ipc_RdmaNative.h"
 
 using namespace std;
-int main()
-{
-    int temp;
-    for (int i = 0; i< 242000000; i++)
-        temp+=temp;
-    clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time2);
-    return 0;
-}
-
 timespec diff(timespec start, timespec end)
 {
     timespec temp;

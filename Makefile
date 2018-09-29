@@ -13,7 +13,7 @@ PROJECT_NAME = libinfinity
 ##################################################
 
 CXX ?= g++
-CXX_FLAGS 		= -O3 -g -std=c++0x -DINFINITY_ASSERT_ON # -DRDEBUG # -DINFINITY_DEBUG_ON
+CXX_FLAGS 		= -O3 -std=c++0x -DINFINITY_ASSERT_ON # -DRDEBUG # -DINFINITY_DEBUG_ON
 LD_FLAGS		= -linfinity -libverbs
 
 ##################################################
@@ -98,6 +98,9 @@ java: library
 
 java-test: library
 	$(CXX) src/infinity/java-wrapper/RdmaNative.cc src/infinity/java-wrapper/RdmaImpl.cc src/infinity/java-wrapper/test.cc $(CXX_FLAGS) -I src/ -I $(JAVA_HOME)/include -I $(JAVA_HOME)/include/linux -L $(RELEASE_FOLDER) $(LD_FLAGS) -o $(RELEASE_FOLDER)/RdmaNativeTest
+
+perf: library
+	$(CXX) src/infinity/java-wrapper/RdmaNative.cc src/infinity/java-wrapper/RdmaImpl.cc src/infinity/java-wrapper/perf.cc $(CXX_FLAGS) -I src/ -I $(JAVA_HOME)/include -I $(JAVA_HOME)/include/linux -L $(RELEASE_FOLDER) $(LD_FLAGS) -o $(RELEASE_FOLDER)/RdmaNativeTest
 
 run-test: java-test
 	bash ./hustTest.sh
