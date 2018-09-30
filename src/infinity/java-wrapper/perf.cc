@@ -5,6 +5,7 @@
 #include <time.h>
 #include "org_apache_hadoop_hbase_ipc_RdmaNative.h"
 
+#define dat_size 5000000
 using namespace std;
 timespec diff(timespec start, timespec end)
 {
@@ -30,7 +31,7 @@ int main(int argc, char **argv) {
         CRdmaServerConnectionInfo conn;
         void *dataPtr;
         uint64_t size;
-        string responseData(5000000, 'a');
+        string responseData(dat_size, 'a');
 
         timespec time1, time2,time3,time4,time5;
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time1);
@@ -57,7 +58,7 @@ int main(int argc, char **argv) {
         cout << "client mode" << endl;
         serverName = argv[1];
         CRdmaClientConnectionInfo conn;
-        string queryData(5000000, 'i');
+        string queryData(dat_size, 'i');
         infinity::memory::Buffer *bufPtr;
 
         timespec time1, time2,time3,time4,time5;
