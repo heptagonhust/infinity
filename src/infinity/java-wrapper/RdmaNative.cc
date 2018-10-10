@@ -184,7 +184,7 @@ JNIEXPORT jobject JNICALL Java_org_apache_hadoop_hbase_ipc_RdmaNative_00024RdmaC
 
     checkedDelete(previousResponseDataPtr);
     try {
-        while (!pConn->isResponseReady())
+        while (!pConn->canReadResponse())
             ;
         pConn->readResponse(previousResponseDataPtr);
         if (previousResponseDataPtr == nullptr)
@@ -315,13 +315,12 @@ JNIEXPORT jboolean JNICALL Java_org_apache_hadoop_hbase_ipc_RdmaNative_00024Rdma
         REPORT_FATAL("cxx conn ptr is nullptr. is the connection closed?");
 
     try {
-        if (pConn->isQueryReadable()) {
+        if (pConn->canReadQuery()) {
             rdma_debug << "serverconn.isqueryreadable successed at obj" << self << std::endl;
             return true;
         } // debug TODO
         else
             return false;
-        return pConn->isQueryReadable();
     } catch (std::exception &e) {
         REPORT_FATAL(e.what());
     }

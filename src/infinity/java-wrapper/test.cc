@@ -21,7 +21,7 @@ int main(int argc, char **argv) {
         cout << "accepted. client addr " << conn.getClientIp() << endl;
 
 
-        while(!conn.isQueryReadable());
+        while(!conn.canReadQuery());
         conn.readQuery(dataPtr, size);
         cout << "query:" << (char *)dataPtr << ", with length " << size << endl;
         responseData = "fuckFirstPkg";
@@ -34,14 +34,14 @@ int main(int argc, char **argv) {
         anotherConn.waitAndAccept();
         cout << "accepted. client addr " << anotherConn.getClientIp() << endl;
 
-        while(!conn.isQueryReadable());
+        while(!conn.canReadQuery());
         conn.readQuery(dataPtr, size);
         cout << "query:" << (char *)dataPtr << ", with length " << size << endl;
-        while(!anotherConn.isQueryReadable());
+        while(!anotherConn.canReadQuery());
         anotherConn.readQuery(dataPtr, size);
         cout << "query:" << (char *)dataPtr << ", with length " << size << endl;
 
-        if(anotherConn.isQueryReadable()) throw std::runtime_error("Query is readable after actually read!");
+        if(anotherConn.canReadQuery()) throw std::runtime_error("Query is readable after actually read!");
  
         responseData = "FFFFFFFFFFFFFFucking!!!";
         conn.writeResponse(responseData.data(), responseData.size());
@@ -70,7 +70,7 @@ int main(int argc, char **argv) {
 
         queryData = "hello";
         conn.writeQuery((void *)queryData.data(), queryData.size());
-        while(!conn.isResponseReady());
+        while(!conn.canReadResponse());
         conn.readResponse(bufPtr);
         cout << "response:" << (char *)bufPtr->getData() << ", with length " << bufPtr->getSizeInBytes() << endl;
 
@@ -91,11 +91,11 @@ int main(int argc, char **argv) {
         queryData = "hello third ~";
         anotherConn.writeQuery((void *)queryData.data(), queryData.size());
 
-        while(!conn.isResponseReady()) sleep(1);
+        while(!conn.canReadResponse()) sleep(1);
         conn.readResponse(bufPtr);
         cout << "response:" << (char *)bufPtr->getData() << ", with length " << bufPtr->getSizeInBytes() << endl;
 
-        while(!anotherConn.isResponseReady()) sleep(1);
+        while(!anotherConn.canReadResponse()) sleep(1);
         anotherConn.readResponse(bufPtr);
         cout << "response:" << (char *)bufPtr->getData() << ", with length " << bufPtr->getSizeInBytes() << endl;
     }

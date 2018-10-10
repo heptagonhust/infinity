@@ -135,7 +135,7 @@ public:
         return pQP->peerAddr;
     }
 
-    bool isQueryReadable() {
+    bool canReadQuery() {
         // Use this chance to check if client has told server its query size and allocate buffer.
         if (pServerStatus->queryMagic == MAGIC_QUERY_READ && pServerStatus->currentQueryLength != 0) {
         // Warning: pServerStatus->currentQueryLength may be under editing! The read value maybe broken!
@@ -157,6 +157,9 @@ public:
         }
         return pServerStatus->queryMagic == MAGIC_QUERY_WRITTEN;
     }
+    bool canWriteResponse() {
+        return pServerStatus->responseMagic == MAGIC_RESPONSE_READ;
+    }
 
     void readQuery(void *&dataPtr, uint64_t &dataSize) {
         rdma_debug << "SERVER " << (long)this << ": readQuery called" << std::endl;
@@ -165,6 +168,7 @@ public:
         dataPtr = pDynamicQueryBuffer->getData();
         dataSize = pServerStatus->currentQueryLength;
         pServerStatus->queryMagic = MAGIC_QUERY_READ;
+        pServerStatus->currentQueryLength = 0;
     }
 
     void writeResponse(const void *dataPtr, uint64_t dataSize) {
@@ -191,7 +195,7 @@ public:
 class CRdmaClientConnectionInfo {
     queues::QueuePair *pQP;                                    // must delete
     memory::RegionToken *pRemoteDynamicBufferTokenBufferToken; // must not delete
-    uint64_t remoteBufferCurrentSize; // If this query is smaller than last, do not wait for the server to allocate space.
+    uint64_t remoteQueryBufferCurrentSize; // If this query is smaller than last, do not wait for the server to allocate space.
 
     void rdmaSetServerCurrentQueryLength(uint64_t queryLength) {
         requests::RequestToken reqToken(context);
@@ -256,7 +260,7 @@ class CRdmaClientConnectionInfo {
 
   public:
     CRdmaClientConnectionInfo() : pQP(nullptr), pRemoteDynamicBufferTokenBufferToken(nullptr),
-    remoteBufferCurrentSize(INIT_BUFFER_SIZE) {
+    remoteQueryBufferCurrentSize(INIT_BUFFER_SIZE) {
 
     }
     ~CRdmaClientConnectionInfo() { checkedDelete(pQP); }
@@ -282,23 +286,23 @@ class CRdmaClientConnectionInfo {
         // write data size.
         pQP->write(&wrappedSizeBuffer, 0, pRemoteDynamicBufferTokenBufferToken, offsetof(ServerStatusType, currentQueryLength),
                    sizeof(dataSize), queues::OperationFlags(), &reqToken);
-        reqToken.waitUntilCompleted();
 
         // Wait for the server allocating buffer...
-        if (dataSize > remoteBufferCurrentSize) {
+        if (dataSize > remoteQueryBufferCurrentSize) {
             rdma_debug << "server is allocating new buffer rather than reusing old one..." << std::endl;
             while (true) {
-                static_assert(offsetof(ServerStatusType, magic) == 0, "Use read with more arg if offsetof(magic) is not 0.");
-                if (MAGIC_SERVER_BUFFER_READY == rdmaGetServerMagic())
+                static_assert(offsetof(ServerStatusType, queryMagic) == 0, "Use read with more arg if offsetof(magic) is not 0.");
+                if (MAGIC_QUERY_BUFFER_READY == rdmaGetQueryMagic())
                     break; // Remote buffer is ready. Fire!
             }
-            remoteBufferCurrentSize = dataSize;
+            remoteQueryBufferCurrentSize = dataSize;
         }
+        reqToken.waitUntilCompleted(); // WARN: this is a async rdma write
         // write the real data
         memory::Buffer tempTokenBuffer(context, sizeof(ServerStatusType));
         pQP->read(&tempTokenBuffer, pRemoteDynamicBufferTokenBufferToken, &reqToken);
         reqToken.waitUntilCompleted();
-        memory::RegionToken remoteDynamicBufferToken = ((ServerStatusType *)tempTokenBuffer.getData())->dynamicBufferToken;
+        memory::RegionToken remoteDynamicBufferToken = ((ServerStatusType *)tempTokenBuffer.getData())->dynamicQueryBufferToken;
         rdma_debug << "real data write ---" << std::endl;
         // workaround for buffer to large unknown bug(at most 2048 byte per read/write):
         for(size_t cter = 0; cter < dataSize / 2048; ++cter) {
@@ -309,10 +313,11 @@ class CRdmaClientConnectionInfo {
         reqToken.waitUntilCompleted();
         rdma_debug << "real data write done ---" << std::endl;
 
-        rdmaSetServerMagic(MAGIC_QUERY_WROTE);
+        rdmaSetQueryMagic(MAGIC_QUERY_WRITTEN);
     }
 
-    bool isResponseReady() { return rdmaGetServerMagic() == MAGIC_RESPONSE_READY; }
+    bool canWriteQuery() { return rdmaGetQueryMagic() == MAGIC_QUERY_READ; }
+    bool canReadResponse() { return rdmaGetResponseMagic() == MAGIC_RESPONSE_WRITTEN; }
 
     void readResponse(memory::Buffer *&pResponseDataBuf) {
         rdma_debug << "CLIENT " << (long)this << ": readResponse called." << std::endl;
@@ -321,7 +326,7 @@ class CRdmaClientConnectionInfo {
         memory::Buffer tempTokenBuffer(context, sizeof(ServerStatusType));
         pQP->read(&tempTokenBuffer, pRemoteDynamicBufferTokenBufferToken, &reqToken);
         reqToken.waitUntilCompleted();
-        memory::RegionToken remoteDynamicBufferToken = ((ServerStatusType *)tempTokenBuffer.getData())->dynamicBufferToken;
+        memory::RegionToken remoteDynamicBufferToken = ((ServerStatusType *)tempTokenBuffer.getData())->dynamicResponseBufferToken;
         uint64_t realResponseLen = rdmaGetServerCurrentResponseLength();
         memory::Buffer *pResponseData = new memory::Buffer(context, realResponseLen);
         // workaround for buffer to large unknown bug(at most 2048 byte per read/write):
@@ -332,14 +337,9 @@ class CRdmaClientConnectionInfo {
         if(realResponseLen % 2048 != 0)
             pQP->read(pResponseData, realResponseLen/2048*2048, &remoteDynamicBufferToken,  realResponseLen/2048*2048, realResponseLen%2048, queues::OperationFlags(), &reqToken);
  
-        // Set the server status to initial status after used!
-        rdmaSetServerCurrentQueryLength(0); // will wait for complete
-        rdmaSetServerMagic(MAGIC_CONNECTED);
+        rdmaSetResponseMagic(MAGIC_RESPONSE_READ);
 
         pResponseDataBuf = pResponseData;
-        if(pResponseData->getSizeInBytes() > remoteBufferCurrentSize) {
-            remoteBufferCurrentSize = pResponseData->getSizeInBytes();
-        }
         // WARNING: You must delete the pResponseDataBuf after using it!!!
     }
 };

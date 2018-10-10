@@ -38,7 +38,7 @@ int main(int argc, char **argv) {
         conn.waitAndAccept();
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time2);
 
-        while(!conn.isQueryReadable());
+        while(!conn.canReadQuery());
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time3);
 
         conn.readQuery(dataPtr, size);
@@ -68,7 +68,7 @@ int main(int argc, char **argv) {
 
         conn.writeQuery((void *)queryData.data(), queryData.size());
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time3);
-        while(!conn.isResponseReady());
+        while(!conn.canReadResponse());
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time4);
         conn.readResponse(bufPtr);
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time5);
