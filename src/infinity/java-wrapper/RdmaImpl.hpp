@@ -64,11 +64,11 @@ enum {
 #else
 enum magic_t : uint32_t {
 #endif
-    MAGIC_CONNECTED = 0x00000000,
-    MAGIC_SERVER_BUFFER_READY = 0xffffffff,
-    MAGIC_QUERY_WROTE = 0xaaaaaaaa,
+    MAGIC_QUERY_BUFFER_READY = 0xffffffff,
+    MAGIC_QUERY_WRITTEN = 0xaaaaaaaa,
     MAGIC_QUERY_READ = 0xaaaa5555,
-    MAGIC_RESPONSE_READY = 0x55555555
+    MAGIC_RESPONSE_WRITTEN = 0x55555555,
+    MAGIC_RESPONSE_READ = 0x5555aaaa
 };
 #if HUST
 namespace std {
@@ -77,10 +77,12 @@ extern std::string to_string(int &m);
 }
 #endif
 struct ServerStatusType {
-    magic_t magic;
+    magic_t queryMagic;
+    magic_t responseMagic;
     volatile uint64_t currentQueryLength;
     uint64_t currentResponseLength;
-    memory::RegionToken dynamicBufferToken;
+    memory::RegionToken dynamicQueryBufferToken;
+    memory::RegionToken dynamicResponseBufferToken;
 };
 typedef memory::RegionToken DynamicBufferTokenBufferTokenType;
 
@@ -92,26 +94,35 @@ class CRdmaServerConnectionInfo {
     memory::RegionToken *pDynamicBufferTokenBufferToken; // must delete
 #define pServerStatus ((ServerStatusType *)pDynamicBufferTokenBuffer->getData())
 
-    memory::Buffer *pDynamicBuffer;           // must delete
-    uint64_t currentBufferSize;                        // Default 4K
+    memory::Buffer *pDynamicQueryBuffer;           // must delete
+    memory::Buffer *pDynamicResponseBuffer;           // must delete
+    uint64_t currentQueryBufferSize;                        // Default 4K
+    uint64_t currentResponseBufferSize;                        // Default 4K
 
     void initFixedLocalBuffer() {
         pDynamicBufferTokenBuffer = new memory::Buffer(context, sizeof(ServerStatusType));
         pDynamicBufferTokenBufferToken = pDynamicBufferTokenBuffer->createRegionToken();
-        pDynamicBuffer = new memory::Buffer(context, currentBufferSize);
-        pDynamicBuffer->createRegionTokenAt(&pServerStatus->dynamicBufferToken);
-        pServerStatus->magic = MAGIC_CONNECTED;
+        pDynamicResponseBuffer = new memory::Buffer(context, currentResponseBufferSize);
+        pDynamicResponseBuffer->createRegionTokenAt(&pServerStatus->dynamicResponseBufferToken);
+        pDynamicQueryBuffer = new memory::Buffer(context, currentQueryBufferSize);
+        pDynamicQueryBuffer->createRegionTokenAt(&pServerStatus->dynamicQueryBufferToken);
+        pServerStatus->queryMagic = MAGIC_QUERY_READ;
+        pServerStatus->responseMagic = MAGIC_RESPONSE_READ;
         pServerStatus->currentQueryLength = 0;
+        pServerStatus->currentResponseLength = 0;
     }
 
 public:
-    CRdmaServerConnectionInfo() : pQP(nullptr), pDynamicBuffer(nullptr), 
-    pDynamicBufferTokenBuffer(nullptr), pDynamicBufferTokenBufferToken(nullptr), currentBufferSize(INIT_BUFFER_SIZE) {
+    CRdmaServerConnectionInfo() : pQP(nullptr), pDynamicQueryBuffer(nullptr), 
+    pDynamicResponseBuffer(nullptr),
+    pDynamicBufferTokenBuffer(nullptr), pDynamicBufferTokenBufferToken(nullptr), 
+    currentQueryBufferSize(INIT_BUFFER_SIZE), currentResponseBufferSize(INIT_BUFFER_SIZE) {
 
     }
     ~CRdmaServerConnectionInfo() {
         checkedDelete(pQP);
-        checkedDelete(pDynamicBuffer);
+        checkedDelete(pDynamicQueryBuffer);
+        checkedDelete(pDynamicResponseBuffer);
         checkedDelete(pDynamicBufferTokenBuffer);
     }
 
@@ -126,7 +137,7 @@ public:
 
     bool isQueryReadable() {
         // Use this chance to check if client has told server its query size and allocate buffer.
-        if (pServerStatus->magic == MAGIC_CONNECTED && pServerStatus->currentQueryLength != 0) {
+        if (pServerStatus->queryMagic == MAGIC_QUERY_READ && pServerStatus->currentQueryLength != 0) {
         // Warning: pServerStatus->currentQueryLength may be under editing! The read value maybe broken!
         // So I set currentQueryLength as volatile and read it again.
         broken_value_read_again:
@@ -134,47 +145,46 @@ public:
             if (queryLength != pServerStatus->currentQueryLength)
                 goto broken_value_read_again;
 
-            if (queryLength > currentBufferSize) {
+            if (queryLength > currentQueryBufferSize) {
                 rdma_debug << "allocating new buffer rather than reusing old one... new length " << queryLength << std::endl;
-                checkedDelete(pDynamicBuffer);
-                pDynamicBuffer = new memory::Buffer(context, queryLength);
-                pDynamicBuffer->createRegionTokenAt(&pServerStatus->dynamicBufferToken);
+                checkedDelete(pDynamicQueryBuffer);
+                pDynamicQueryBuffer = new memory::Buffer(context, queryLength);
+                pDynamicQueryBuffer->createRegionTokenAt(&pServerStatus->dynamicQueryBufferToken);
                 //pDynamicBuffer->resize(queryLength);
-                currentBufferSize = queryLength;
+                currentQueryBufferSize = queryLength;
             }
-            pServerStatus->magic = MAGIC_SERVER_BUFFER_READY;
+            pServerStatus->queryMagic = MAGIC_QUERY_BUFFER_READY;
         }
-        return pServerStatus->magic == MAGIC_QUERY_WROTE;
+        return pServerStatus->queryMagic == MAGIC_QUERY_WRITTEN;
     }
 
     void readQuery(void *&dataPtr, uint64_t &dataSize) {
         rdma_debug << "SERVER " << (long)this << ": readQuery called" << std::endl;
-        if (pServerStatus->magic != MAGIC_QUERY_WROTE)
+        if (pServerStatus->queryMagic != MAGIC_QUERY_WRITTEN)
             throw std::runtime_error("Query is not readable while calling readQuery");
-        dataPtr = pDynamicBuffer->getData();
+        dataPtr = pDynamicQueryBuffer->getData();
         dataSize = pServerStatus->currentQueryLength;
-        pServerStatus->magic = MAGIC_QUERY_READ;
+        pServerStatus->queryMagic = MAGIC_QUERY_READ;
     }
 
     void writeResponse(const void *dataPtr, uint64_t dataSize) {
         rdma_debug << "SERVER " << (long)this << ": writeResponse called. dataPtr is " << (long)dataPtr << ",dataSize is " << dataSize << std::endl;
-        if (pServerStatus->magic != MAGIC_QUERY_READ)
-            throw std::runtime_error(std::string("write response: wrong magic. Want 0xaaaaaaaa, got ") +
-                                     std::to_string(pServerStatus->magic));
-        if(dataSize > currentBufferSize) {
-            checkedDelete(pDynamicBuffer);
-            pDynamicBuffer = new memory::Buffer(context, dataSize);
+        if (pServerStatus->responseMagic != MAGIC_RESPONSE_READ)
+            throw std::runtime_error("previous response is not read");
+        if(dataSize > currentResponseBufferSize) {
+            checkedDelete(pDynamicResponseBuffer);
+            pDynamicResponseBuffer = new memory::Buffer(context, dataSize);
             //pDynamicBuffer->resize(dataSize);
-            pDynamicBuffer->createRegionTokenAt(&pServerStatus->dynamicBufferToken);
-            currentBufferSize = dataSize;
+            pDynamicResponseBuffer->createRegionTokenAt(&pServerStatus->dynamicResponseBufferToken);
+            currentResponseBufferSize = dataSize;
         }
         // TODO: here's an extra copy. use dataPtr directly and jni global reference to avoid it!
         pServerStatus->currentResponseLength = dataSize;
-        std::memcpy(pDynamicBuffer->getData(), dataPtr, dataSize);
+        std::memcpy(pDynamicResponseBuffer->getData(), dataPtr, dataSize);
 
-        if (pServerStatus->magic != MAGIC_QUERY_READ)
+        if (pServerStatus->responseMagic != MAGIC_QUERY_READ)
             throw std::runtime_error("write response: magic is changed while copying memory data.");
-        pServerStatus->magic = MAGIC_RESPONSE_READY;
+        pServerStatus->responseMagic = MAGIC_RESPONSE_WRITTEN;
     }
 };
 
@@ -197,21 +207,36 @@ class CRdmaClientConnectionInfo {
         reqToken.waitUntilCompleted();
         return *(uint64_t *)serverResponseLenBuffer.getData();
     }
-    void rdmaSetServerMagic(magic_t magic) {
+    void rdmaSetQueryMagic(magic_t magic) {
         requests::RequestToken reqToken(context);
         memory::Buffer serverMagicBuffer(context, sizeof(magic_t));
         *(magic_t *)serverMagicBuffer.getData() = magic;
 #if !HUST
-        static_assert(offsetof(ServerStatusType, magic) == 0, "Use read with more arg if offsetof(magic) is not 0.");
+        static_assert(offsetof(ServerStatusType, queryMagic) == 0, "Use read with more arg if offsetof(magic) is not 0.");
 #endif
         pQP->write(&serverMagicBuffer, pRemoteDynamicBufferTokenBufferToken, sizeof(magic_t), &reqToken);
         reqToken.waitUntilCompleted();
     }
+    void rdmaSetResponseMagic(magic_t magic) {
+        requests::RequestToken reqToken(context);
+        memory::Buffer serverMagicBuffer(context, sizeof(magic_t));
+        *(magic_t *)serverMagicBuffer.getData() = magic;
+        pQP->write(&serverMagicBuffer, 0, pRemoteDynamicBufferTokenBufferToken, offsetof(ServerStatusType, responseMagic), sizeof(magic_t), queues::OperationFlags(), &reqToken);
+        reqToken.waitUntilCompleted();
+    }
 
-    magic_t rdmaGetServerMagic() {
+    magic_t rdmaGetQueryMagic() {
         memory::Buffer serverMagicBuffer(context, sizeof(magic_t));
         requests::RequestToken reqToken(context);
         pQP->read(&serverMagicBuffer, pRemoteDynamicBufferTokenBufferToken, sizeof(magic_t), &reqToken);
+        reqToken.waitUntilCompleted();
+        return *(magic_t *)serverMagicBuffer.getData();
+    }
+
+    magic_t rdmaGetResponseMagic() {
+        memory::Buffer serverMagicBuffer(context, sizeof(magic_t));
+        requests::RequestToken reqToken(context);
+        pQP->read(&serverMagicBuffer, 0, pRemoteDynamicBufferTokenBufferToken, offsetof(ServerStatusType, responseMagic), sizeof(magic_t), queues::OperationFlags(), &reqToken);
         reqToken.waitUntilCompleted();
         return *(magic_t *)serverMagicBuffer.getData();
     }
