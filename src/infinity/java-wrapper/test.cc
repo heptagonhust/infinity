@@ -24,7 +24,12 @@ int main(int argc, char **argv) {
         while(!conn.canReadQuery());
         conn.readQuery(dataPtr, size);
         cout << "query:" << (char *)dataPtr << ", with length " << size << endl;
+        while(!conn.canReadQuery());
+        conn.readQuery(dataPtr, size);
+        cout << "NESTED query:" << (char *)dataPtr << ", with length " << size << endl;
+
         responseData = "fuckFirstPkg";
+        conn.writeResponse(responseData.data(), responseData.size());
         conn.writeResponse(responseData.data(), responseData.size());
         cout << "Sleeping 5 seconds to wait for the client reading response..." << endl;
         sleep(5); // the client is still reading thr response!
@@ -61,6 +66,7 @@ int main(int argc, char **argv) {
         CRdmaClientConnectionInfo conn;
         string queryData;
         infinity::memory::Buffer *bufPtr;
+        infinity::memory::Buffer *bufPtr2;
 
         _again:
         try {
@@ -69,10 +75,16 @@ int main(int argc, char **argv) {
         catch(std::exception &e) {sleep(1);goto _again;}
 
         queryData = "hello";
+        while(!conn.canWriteQuery());
+        conn.writeQuery((void *)queryData.data(), queryData.size());
+        while(!conn.canWriteQuery());
         conn.writeQuery((void *)queryData.data(), queryData.size());
         while(!conn.canReadResponse());
         conn.readResponse(bufPtr);
+        while(!conn.canReadResponse());
+        conn.readResponse(bufPtr2);
         cout << "response:" << (char *)bufPtr->getData() << ", with length " << bufPtr->getSizeInBytes() << endl;
+        cout << "NESTED response:" << (char *)bufPtr2->getData() << ", with length " << bufPtr2->getSizeInBytes() << endl;
 
         CRdmaClientConnectionInfo anotherConn;
         _again2:
