@@ -39,20 +39,22 @@ JNIEXPORT void JNICALL Java_org_apache_hadoop_hbase_ipc_RdmaNative_rdmaDestroyGl
 
 #define REPORT_FATAL(msg)                                                                                                      \
     do {                                                                                                                       \
-        std::cerr << "RdmaNative FATAL: " __FILE__ ":" << __LINE__ << " errno=" << errno << ":" << msg << "Unable to pass error to Java. Have to abort..."  \
-                  << std::endl;                                                                                                \
+        std::cerr << "RdmaNative FATAL: " __FILE__ ":" << __LINE__ << " errno=" << errno << ":" << msg                         \
+                  << "Unable to pass error to Java. Have to abort..." << std::endl;                                            \
         abort();                                                                                                               \
     } while (0)
 
 #define REPORT_ERROR(msg)                                                                                                      \
     do {                                                                                                                       \
-        std::cerr << "RdmaNative ERROR: " __FILE__ ":" << __LINE__ << " errno=" << errno << ":" << msg << "Returning error code to java..." << std::endl;   \
+        std::cerr << "RdmaNative ERROR: " __FILE__ ":" << __LINE__ << " errno=" << errno << ":" << msg                         \
+                  << "Returning error code to java..." << std::endl;                                                           \
         return NULL;                                                                                                           \
     } while (0)
 
 #define REPORT_ERROR_BOOL(msg)                                                                                                 \
     do {                                                                                                                       \
-        std::cerr << "RdmaNative ERROR: " __FILE__ ":" << __LINE__ << " errno=" << errno << ":" << msg << "Returning error code to java..." << std::endl;   \
+        std::cerr << "RdmaNative ERROR: " __FILE__ ":" << __LINE__ << " errno=" << errno << ":" << msg                         \
+                  << "Returning error code to java..." << std::endl;                                                           \
         return JNI_FALSE;                                                                                                      \
     } while (0)
 
@@ -255,7 +257,8 @@ JNIEXPORT jboolean JNICALL Java_org_apache_hadoop_hbase_ipc_RdmaNative_00024Rdma
  * Method:    isClosed
  * Signature: ()Z
  */
-JNIEXPORT jboolean JNICALL Java_org_apache_hadoop_hbase_ipc_RdmaNative_00024RdmaServerConnection_isClosed(JNIEnv *env, jobject self) {
+JNIEXPORT jboolean JNICALL Java_org_apache_hadoop_hbase_ipc_RdmaNative_00024RdmaServerConnection_isClosed(JNIEnv *env,
+                                                                                                          jobject self) {
     jclass jConnCls = env->FindClass("org/apache/hadoop/hbase/ipc/RdmaNative$RdmaClientConnection");
     if (jConnCls == NULL)
         REPORT_ERROR_BOOL("Unable to find class org/apache/hadoop/hbase/ipc/RdmaNative$RdmaClientConnection.");
@@ -264,7 +267,7 @@ JNIEXPORT jboolean JNICALL Java_org_apache_hadoop_hbase_ipc_RdmaNative_00024Rdma
         REPORT_ERROR_BOOL("Unable to getFieldId `ptrCxxClass`");
     jlong cxxPtr = env->GetLongField(self, jFieldCxxPtr);
     CRdmaClientConnectionInfo *pConn = (CRdmaClientConnectionInfo *)cxxPtr;
- 
+
     return pConn == nullptr;
 }
 
@@ -317,6 +320,36 @@ JNIEXPORT jboolean JNICALL Java_org_apache_hadoop_hbase_ipc_RdmaNative_00024Rdma
     try {
         if (pConn->canReadQuery()) {
             rdma_debug << "serverconn.isqueryreadable successed at obj" << self << std::endl;
+            return true;
+        } // debug TODO
+        else
+            return false;
+    } catch (std::exception &e) {
+        REPORT_FATAL(e.what());
+    }
+}
+
+/*
+ * Class:     org_apache_hadoop_hbase_ipc_RdmaNative_RdmaServerConnection
+ * Method:    isResponseWritable
+ * Signature: ()Z
+ */
+JNIEXPORT jboolean JNICALL
+Java_org_apache_hadoop_hbase_ipc_RdmaNative_00024RdmaServerConnection_isResponseWritable(JNIEnv *env, jobject self) {
+    jclass jConnCls = env->FindClass("org/apache/hadoop/hbase/ipc/RdmaNative$RdmaServerConnection");
+    if (jConnCls == NULL)
+        REPORT_FATAL("Unable to find class org/apache/hadoop/hbase/ipc/RdmaNative$RdmaServerConnection.");
+    jfieldID jFieldCxxPtr = env->GetFieldID(jConnCls, "ptrCxxClass", "J");
+    if (jFieldCxxPtr == NULL)
+        REPORT_FATAL("Unable to getFieldId `ptrCxxClass`");
+    jlong cxxPtr = env->GetLongField(self, jFieldCxxPtr);
+    CRdmaServerConnectionInfo *pConn = (CRdmaServerConnectionInfo *)cxxPtr;
+    if (pConn == nullptr)
+        REPORT_FATAL("cxx conn ptr is nullptr. is the connection closed?");
+
+    try {
+        if (pConn->canWriteResponse()) {
+            rdma_debug << "serverconn.isresponseWritable successed at obj" << self << std::endl;
             return true;
         } // debug TODO
         else

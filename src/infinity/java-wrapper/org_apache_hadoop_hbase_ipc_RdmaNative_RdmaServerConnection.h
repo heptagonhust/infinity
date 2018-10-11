@@ -25,6 +25,14 @@ JNIEXPORT jboolean JNICALL Java_org_apache_hadoop_hbase_ipc_RdmaNative_00024Rdma
 
 /*
  * Class:     org_apache_hadoop_hbase_ipc_RdmaNative_RdmaServerConnection
+ * Method:    isResponseWritable
+ * Signature: ()Z
+ */
+JNIEXPORT jboolean JNICALL Java_org_apache_hadoop_hbase_ipc_RdmaNative_00024RdmaServerConnection_isResponseWritable
+  (JNIEnv *, jobject);
+
+/*
+ * Class:     org_apache_hadoop_hbase_ipc_RdmaNative_RdmaServerConnection
  * Method:    getClientIp
  * Signature: ()[B
  */
