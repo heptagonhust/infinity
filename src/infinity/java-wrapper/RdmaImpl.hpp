@@ -186,8 +186,8 @@ public:
         pServerStatus->currentResponseLength = dataSize;
         std::memcpy(pDynamicResponseBuffer->getData(), dataPtr, dataSize);
 
-        if (pServerStatus->responseMagic != MAGIC_RESPONSE_READ)
-            throw std::runtime_error("write response: magic is changed while copying memory data.");
+        //if (pServerStatus->responseMagic != MAGIC_RESPONSE_READ)
+        //    throw std::runtime_error("write response: magic is changed while copying memory data.");
         pServerStatus->responseMagic = MAGIC_RESPONSE_WRITTEN;
     }
 };

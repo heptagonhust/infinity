@@ -13,7 +13,7 @@ PROJECT_NAME = libinfinity
 ##################################################
 
 CXX ?= g++
-CXX_FLAGS 		= -O3 -std=c++0x -DINFINITY_ASSERT_ON # -DRDEBUG -DINFINITY_DEBUG_ON -g
+CXX_FLAGS 		= -O3 -std=c++0x -DINFINITY_ASSERT_ON  -DRDEBUG -DINFINITY_DEBUG_ON -g
 LD_FLAGS		= -linfinity -libverbs
 
 ##################################################
