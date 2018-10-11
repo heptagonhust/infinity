@@ -13,7 +13,7 @@ PROJECT_NAME = libinfinity
 ##################################################
 
 CXX ?= g++
-CXX_FLAGS 		= -O3 -std=c++0x -DINFINITY_ASSERT_ON  -DRDEBUG -DINFINITY_DEBUG_ON -g
+CXX_FLAGS 		= -O3 -std=c++0x -DINFINITY_ASSERT_ON # -DRDEBUG -DINFINITY_DEBUG_ON -g
 LD_FLAGS		= -linfinity -libverbs
 
 ##################################################
@@ -60,7 +60,7 @@ BUILD_DIRECTORIES	= $(patsubst $(SOURCE_FOLDER)/%,$(BUILD_FOLDER)/%,$(SOURCE_DIR
 
 ##################################################
 
-all: library java java-test perf
+all: library java java-test perf sockperf
 
 ##################################################
 
@@ -101,6 +101,9 @@ java-test: library
 
 perf: library
 	$(CXX) src/infinity/java-wrapper/RdmaNative.cc src/infinity/java-wrapper/RdmaImpl.cc src/infinity/java-wrapper/perf.cc $(CXX_FLAGS) -I src/ -I $(JAVA_HOME)/include -I $(JAVA_HOME)/include/linux -L $(RELEASE_FOLDER) $(LD_FLAGS) -lrt -o $(RELEASE_FOLDER)/perf
+
+sockperf: library
+	$(CXX) src/infinity/java-wrapper/sock.cc $(CXX_FLAGS) -lrt -o $(RELEASE_FOLDER)/sockperf
 
 run-test: java-test
 	bash ./hustTest.sh
