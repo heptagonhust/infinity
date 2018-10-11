@@ -173,7 +173,7 @@ public:
 
     void writeResponse(const void *dataPtr, uint64_t dataSize) {
         rdma_debug << "SERVER " << (long)this << ": writeResponse called. dataPtr is " << (long)dataPtr << ",dataSize is " << dataSize << std::endl;
-        if (pServerStatus->responseMagic != MAGIC_RESPONSE_READ)
+        if (!canWriteResponse())
             throw std::runtime_error("previous response is not read");
         if(dataSize > currentResponseBufferSize) {
             checkedDelete(pDynamicResponseBuffer);

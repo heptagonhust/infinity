@@ -31,7 +31,9 @@ int main(int argc, char **argv) {
 
         responseData = "fuckFirstPkg";
         responseData2 = "nested fuckFirstPkg";
+        while(!conn.canWriteResponse());
         conn.writeResponse(responseData.data(), responseData.size());
+        while(!conn.canWriteResponse());
         conn.writeResponse(responseData2.data(), responseData2.size());
         cout << "Sleeping 5 seconds to wait for the client reading response..." << endl;
         sleep(5); // the client is still reading thr response!
